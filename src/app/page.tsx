@@ -59,7 +59,7 @@ export default function Chatbot() {
   return (
     <div className="flex flex-col h-screen bg-white-100">
       <header className="bg-white p-4 text-center border-b">
-        <h1 className="text-2xl font-bold">💬 AI Debugging Assistant</h1>
+        <h1 className="text-2xl font-bold text-blue-900">💬 AI Debugging Assistant</h1>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -85,14 +85,14 @@ export default function Chatbot() {
       <form onSubmit={handleSubmit} className="p-4 bg-white border-t">
         <div className="flex items-center space-x-2">
           <input
-            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-blue-600 text-blue-900"
             value={input}
             placeholder="What's your coding question?"
             onChange={(e) => setInput(e.target.value)}
           />
           <button
             type="submit"
-            className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="p-3 bg-blue-600 text-blue-100 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Send
           </button>
