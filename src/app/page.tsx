@@ -1,103 +1,103 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useChat} from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { createClient } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// Define a type for your chat history from Supabase
+interface Chat {
+  id: number;
+  prompt: string;
+  response: string;
+}
+
+export default function Chatbot() {
+  const [chatHistory, setChatHistory] = useState<Chat[]>([]);
+  const [input, setInput] = useState('');
+
+  // Function to fetch chat history from Supabase
+  const fetchChatHistory = async () => {
+    const { data, error } = await supabase
+      .from('chat_history')
+      .select('*')
+      .eq('user_id', 'guest')
+      .order('id', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching chat history:', error);
+    } else {
+      setChatHistory(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchChatHistory();
+  }, []);
+
+  // useChat hook to handle chat logic and streaming
+  
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    sendMessage({text: input});
+    setInput('');
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="flex flex-col h-screen bg-white-100">
+      <header className="bg-white p-4 text-center border-b">
+        <h1 className="text-2xl font-bold">💬 AI Debugging Assistant</h1>
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+            <div
+              className={`max-w-md p-3 rounded-lg shadow-md ${
+                m.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-900'
+              }`}
+            >
+              <div className="font-semibold">{m.role === 'user' ? 'You' : 'Bot'}</div>
+              <p className="whitespace-pre-wrap">
+                {m.parts.map((part) => (part.type === 'text' ? part.text : null))}
+              </p>
+            </div>
+          </div>
+        ))}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+      <form onSubmit={handleSubmit} className="p-4 bg-white border-t">
+        <div className="flex items-center space-x-2">
+          <input
+            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={input}
+            placeholder="What's your coding question?"
+            onChange={(e) => setInput(e.target.value)}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <button
+            type="submit"
+            className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Send
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
