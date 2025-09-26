@@ -1,7 +1,7 @@
 'use client';
 import { useChat } from '@ai-sdk/react';
 import { createClient } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
+import { useRef ,useEffect, useState } from 'react';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -19,6 +19,7 @@ interface Chat {
 export default function Chatbot() {
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
   const [input, setInput] = useState('');
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // Function to fetch chat history from Supabase
   const fetchChatHistory = async () => {
@@ -80,7 +81,9 @@ export default function Chatbot() {
       setInput('');
     }
   };
-
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, status]);
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       <header className="bg-gray-800 p-4 text-center border-b border-gray-700">
@@ -92,11 +95,18 @@ export default function Chatbot() {
           key={message.id}
           className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
+          {message.role === 'assistant' && (
+            <img
+              src="/bot-avatar.jpg"
+              alt="Bot"
+              className="w-8 h-8 rounded-full mr-2"
+            />
+          )}
           <div
             className={`max-w-md p-3 rounded-lg shadow-md ${
               message.role === 'user'
-                ? 'bg-blue-700 text-white'
-                : 'bg-gray-700 text-blue-100'
+          ? 'bg-blue-700 text-white'
+          : 'bg-gray-700 text-blue-100'
             }`}
           >
             <div className="font-semibold">
@@ -104,11 +114,18 @@ export default function Chatbot() {
             </div>
             <p className="whitespace-pre-wrap">
               {message.parts
-                .filter(part => part.type === 'text')
-                .map(part => part.text)
-                .join('')}
+          .filter(part => part.type === 'text')
+          .map(part => part.text)
+          .join('')}
             </p>
           </div>
+          {message.role === 'user' && (
+            <img
+              src="/user-avatar.jpg"
+              alt="You"
+              className="w-8 h-8 rounded-full ml-2"
+            />
+          )}
         </div>
       ))}
       {status === 'streaming' && (
@@ -119,6 +136,7 @@ export default function Chatbot() {
           </div>
         </div>
       )}
+      <div ref={bottomRef}  />
     </main>
     <form onSubmit={handleSubmit} className="p-4 bg-gray-800 border-t border-gray-700">
       <div className="flex items-center space-x-2">
