@@ -85,15 +85,15 @@ export default function Chatbot() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, status]);
   return (
-    <div
-      className="relative flex flex-col h-screen text-white overflow-hidden"
-      style={{
-        backgroundImage: "url('/background.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
+    <div className="relative flex flex-col h-screen text-white overflow-hidden">
+      {/* Animated background image */}
+      <div className="absolute inset-0 kenburns-top" style={{
+          backgroundImage: "url('/background.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          zIndex: 0,
+        }} />
       {/* Overlay for dark theme */}
       <div className="absolute inset-0 bg-gray-900 bg-opacity-80 z-0" />
       <div className="relative z-10 flex flex-col h-full">
@@ -104,7 +104,7 @@ export default function Chatbot() {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`fade-in flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && (
                 <img
@@ -116,8 +116,8 @@ export default function Chatbot() {
               <div
                 className={`max-w-md p-3 rounded-lg shadow-md ${
                   message.role === 'user'
-              ? 'bg-blue-700 text-white'
-              : 'bg-gray-700 text-blue-100'
+                    ? 'bg-blue-700 text-white'
+                    : 'bg-gray-700 text-blue-100'
                 }`}
               >
                 <div className="font-semibold">
@@ -125,9 +125,9 @@ export default function Chatbot() {
                 </div>
                 <p className="whitespace-pre-wrap">
                   {message.parts
-              .filter(part => part.type === 'text')
-              .map(part => part.text)
-              .join('')}
+                    .filter(part => part.type === 'text')
+                    .map(part => part.text)
+                    .join('')}
                 </p>
               </div>
               {message.role === 'user' && (

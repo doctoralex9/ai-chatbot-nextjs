@@ -58,8 +58,8 @@ Always use this tool first when users mention football, soccer, matches, betting
         }).join(' | ');
         
         return `🏆 ${homeTeam} vs ${awayTeam}
-📅 ${commenceTime}
-💰 ${bookmakers}`;
+        📅 ${commenceTime}
+        💰 ${bookmakers}`;
       }).join('\n\n');
       
       return `Here are the upcoming matches with live betting odds:\n\n${summary}`;
