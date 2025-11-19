@@ -201,9 +201,10 @@ export default function Chatbot() {
               {status === 'streaming' ? '...' : 'Send'}
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-2 text-center text-red-400 font-bold">
-            *** DISCLAIMER: Betting involves risk. Never wager more than you can afford to lose. ***
+          <p className="text-xs text-red-400 mt-2 text-center font-bold">
+              *** DISCLAIMER: Betting involves risk. Never wager more than you can afford to lose. ***
           </p>
+
         </form>
       </div>
     </div>
