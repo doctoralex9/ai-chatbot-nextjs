@@ -24,9 +24,35 @@ The AI MUST filter the returned data to find specific matches/teams requested by
 
   execute: async (input) => {
     // Aggressive Defaults for immediate tool execution (Pro-level UX)
-    const { sport, region } = input as any;
-    const apiSport = sport || "soccer_uefa_champs_league"; 
-    const apiRegion = region || "us"; 
+    // Validate input shape at runtime using Zod and apply safe defaults.
+    const OddsToolInput = z.object({
+      sport: z.string().optional(),
+      region: z.string().optional(),
+    });
+
+    const parsed = OddsToolInput.safeParse(input);
+    if (!parsed.success) {
+      // Invalid input — log for debugging and fall back to safe defaults
+      console.warn('getUpcomingFootballOdds: invalid input, using defaults', parsed.error);
+    }
+
+    const apiSport = parsed.success ? (parsed.data.sport ?? "soccer_uefa_champs_league") : "soccer_uefa_champs_league";
+    const apiRegion = parsed.success ? (parsed.data.region ?? "us") : "us";
+
+    // Helper type guards to safely handle external JSON shapes
+    const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null;
+    const findOutcomePrice = (outcomes: unknown[], name: string): string | number => {
+      for (const o of outcomes) {
+        if (isRecord(o)) {
+          const oName = o['name'];
+          const price = o['price'];
+          if (typeof oName === 'string' && oName === name && (typeof price === 'string' || typeof price === 'number')) {
+            return price;
+          }
+        }
+      }
+      return 'N/A';
+    };
 
     try {
       const controller = new AbortController();
@@ -54,29 +80,53 @@ The AI MUST filter the returned data to find specific matches/teams requested by
       }
 
       // 🛠️ Professional Fix: Return structured JSON for easier, faster AI analysis.
+      const matches = Array.isArray(data) ? data.slice(0, 5).map((game: unknown) => {
+        if (!isRecord(game)) return null;
+
+        const id = typeof game['id'] === 'string' ? game['id'] : String(game['id'] ?? '');
+        const homeTeam = typeof game['home_team'] === 'string' ? game['home_team'] : '';
+        const awayTeam = typeof game['away_team'] === 'string' ? game['away_team'] : '';
+        const commence_time = typeof game['commence_time'] === 'string' ? game['commence_time'] : undefined;
+
+        const rawBookmakers = Array.isArray(game['bookmakers']) ? game['bookmakers'] as unknown[] : [];
+        const bookmaker_odds = rawBookmakers.slice(0, 3).map((bm: unknown) => {
+          if (!isRecord(bm)) return { title: 'Unknown', home: 'N/A', draw: 'N/A', away: 'N/A' };
+
+          const title = typeof bm['title'] === 'string' ? bm['title'] : 'Unknown';
+          const markets = Array.isArray(bm['markets']) ? bm['markets'] as unknown[] : [];
+          const market0 = markets[0];
+          const outcomes = Array.isArray(isRecord(market0) ? market0['outcomes'] as unknown[] : undefined) ? (market0 as Record<string, unknown>)['outcomes'] as unknown[] : [];
+
+          const home = findOutcomePrice(outcomes, homeTeam);
+          const draw = findOutcomePrice(outcomes, 'Draw');
+          const away = findOutcomePrice(outcomes, awayTeam);
+
+          return { title, home, draw, away };
+        });
+
+        return {
+          id,
+          matchup: `${homeTeam} vs ${awayTeam}`,
+          commence_time,
+          bookmaker_odds,
+        };
+      }).filter(Boolean) : [];
+
       return JSON.stringify({
         source_league: apiSport,
         source_region: apiRegion,
-        matches: data.slice(0, 5).map((game: any) => ({
-          id: game.id,
-          matchup: `${game.home_team} vs ${game.away_team}`,
-          commence_time: game.commence_time,
-          bookmaker_odds: game.bookmakers.slice(0, 3).map((bm: any) => {
-            const outcomes = bm.markets[0]?.outcomes || [];
-            return {
-              title: bm.title,
-              home: outcomes.find((o: any) => o.name === game.home_team)?.price || 'N/A',
-              draw: outcomes.find((o: any) => o.name === 'Draw')?.price || 'N/A',
-              away: outcomes.find((o: any) => o.name === game.away_team)?.price || 'N/A',
-            };
-          }),
-        })),
+        matches,
       });
 
-    } catch (error: any) {
-      console.error('Error fetching odds:', error);
-      if (error.name === 'AbortError') {
-        return 'TIMEOUT: The odds API is taking too long to respond. Please try again.';
+    } catch (error: unknown) {
+      const err = error;
+      if (err instanceof Error) {
+        console.error('Error fetching odds:', err.message);
+        if (err.name === 'AbortError') {
+          return 'TIMEOUT: The odds API is taking too long to respond. Please try again.';
+        }
+      } else {
+        console.error('Error fetching odds (non-Error):', err);
       }
       return 'CRITICAL_ERROR: Failed to retrieve odds. Check API configuration.';
     }
@@ -140,18 +190,22 @@ Always conclude with the required legal disclaimer about betting risks.`,
           }
         },
       });
-    } catch (streamError: any) {
+    } catch (streamError: unknown) {
       clearTimeout(timeoutId);
-      // ... Error handling remains the same (robust)
-      if (streamError.name === 'AbortError') {
-        return new Response('Request timeout. Please try again.', { status: 408 });
+      // ... Error handling remains robust with proper narrowing
+      if (streamError instanceof Error) {
+        if (streamError.name === 'AbortError') {
+          return new Response('Request timeout. Please try again.', { status: 408 });
+        }
       }
       throw streamError;
     }
-  } catch (error: any) {
-    // ... Global error handling remains the same
-    console.error('Chat API error:', error);
-    if (error.message?.includes('API key')) {
+  } catch (error: unknown) {
+    // ... Global error handling remains the same, but narrow the unknown
+    const err = error;
+    console.error('Chat API error:', err);
+    const maybe = err as { message?: string };
+    if (typeof maybe.message === 'string' && maybe.message.includes('API key')) {
       return new Response('API configuration error. Please contact support.', { status: 500 });
     }
     return new Response('An error occurred. Please try again.', { status: 500 });

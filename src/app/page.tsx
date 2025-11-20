@@ -115,7 +115,7 @@ export default function Chatbot() {
                   <div>✅ La Liga Risk Assessment</div>
                 </div>
                 <p className="text-xs text-gray-500 mt-4">
-                  Try: "Give me a high-value bet for today's Premier League matches."
+                  Try: &quot;Give me a high-value bet for today&#39;s Premier League matches.&quot;
                 </p>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function Chatbot() {
             </button>
           </div>
           <p className="text-xs text-red-400 mt-2 text-center font-bold">
-              *** DISCLAIMER: Betting involves risk. Never wager more than you can afford to lose. ***
+              &#42;&#42;&#42; DISCLAIMER: Betting involves risk. Never wager more than you can afford to lose. &#42;&#42;&#42;
           </p>
 
         </form>
