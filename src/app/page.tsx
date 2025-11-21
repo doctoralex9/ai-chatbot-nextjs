@@ -1,7 +1,7 @@
 'use client';
 import { useChat, UIMessage } from '@ai-sdk/react';
 import { createClient } from '@supabase/supabase-js';
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 // Initialize Supabase client for client-side use (READ ONLY)
 const supabase = createClient(
@@ -16,52 +16,48 @@ interface Chat {
 }
 
 export default function Chatbot() {
-  const [chatHistory, setChatHistory] = useState<Chat[] | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchChatHistory = async () => {
-    const { data, error } = await supabase
-      .from('chat_history')
-      .select('*')
-      .eq('user_id', 'guest') // Use a proper user ID in production
-      .order('id', { ascending: true });
+  // Initialize useChat - we'll load history and set messages after
+  const { messages, setMessages, sendMessage, status } = useChat();
 
-    if (error) {
-      throw new Error("Error loading chat history!");
-      setChatHistory([]);
-    } else {
-      setChatHistory(data || []);
-    }
-  };
-
+  // Load chat history only once on mount
   useEffect(() => {
+    const fetchChatHistory = async () => {
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('*')
+        .eq('user_id', 'guest')
+        .order('id', { ascending: true });
+
+      if (error) {
+        console.error("Error loading chat history:", error);
+        setIsLoadingHistory(false);
+      } else {
+        // Convert Supabase history to UIMessage format
+        const historyMessages = (data || []).map(item => [
+          { 
+            id: `user-${item.id}`, 
+            role: 'user' as const, 
+            parts: [{ type: 'text' as const, text: item.prompt }] 
+          },
+          { 
+            id: `assistant-${item.id}`, 
+            role: 'assistant' as const, 
+            parts: [{ type: 'text' as const, text: item.response }] 
+          },
+        ] as UIMessage[]).flat();
+
+        setMessages(historyMessages);
+        setIsLoadingHistory(false);
+      }
+    };
+
     fetchChatHistory();
-  }, []);
+  }, []); // Only run once on mount
 
-  // FIX: Convert Supabase history to AI SDK UIMessage format (no 'content' property)
-  const initialMessages = useMemo(() => {
-    if (!chatHistory) return [];
-    
-    return chatHistory.map(item => [
-      { id: `user-${item.id}`, role: 'user', parts: [{ type: 'text', text: item.prompt }] },
-      { id: `assistant-${item.id}`, role: 'assistant', parts: [{ type: 'text', text: item.response }] },
-    ] as UIMessage[]).flat();
-  }, [chatHistory]);
-
-  const { messages, sendMessage, status } = useChat({
-    messages: initialMessages,
-    // Removed onFinish hook as saving is now handled securely in route.ts
-  });
-
-  // FIX: Use `status.toString()` to resolve TypeScript type issue
-  useEffect(() => {
-    if (status.toString() === 'finished') {
-      // Re-fetch history to update the view after a message finishes streaming
-      fetchChatHistory(); 
-    }
-  }, [status]);
-  
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (input.trim()) {
@@ -75,7 +71,7 @@ export default function Chatbot() {
   }, [messages, status]);
   
   // Professional Loading State
-  if (chatHistory === null) {
+  if (isLoadingHistory) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
         <div className="flex items-center space-x-3">
@@ -120,9 +116,6 @@ export default function Chatbot() {
               </div>
             </div>
           )}
-
-          {/* ... Chat Messages and Typing Indicator components remain the same for styling consistency ... */}
-          {/* (Note: All subsequent message rendering logic is assumed to be correct based on previous revisions) */}
 
           {messages.map((message) => (
             <div
@@ -204,7 +197,6 @@ export default function Chatbot() {
           <p className="text-xs text-red-400 mt-2 text-center font-bold">
               &#42;&#42;&#42; DISCLAIMER: Betting involves risk. Never wager more than you can afford to lose. &#42;&#42;&#42;
           </p>
-
         </form>
       </div>
     </div>
