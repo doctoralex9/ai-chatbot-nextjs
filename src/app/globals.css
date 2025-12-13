@@ -1,40 +1,278 @@
 @import "tailwindcss";
 
+/*
+  CSS Custom Properties (Design Tokens)
+  Following best practices for theming and maintainability
+*/
 :root {
-  --background: #efeaea;
-  --foreground: #171717;
+  /* Semantic Color System */
+  --background-primary: 0 0% 100%;
+  --background-secondary: 240 5% 96%;
+  --background-tertiary: 240 5% 92%;
+
+  --foreground-primary: 240 10% 10%;
+  --foreground-secondary: 240 5% 35%;
+  --foreground-muted: 240 4% 55%;
+
+  /* Brand Colors */
+  --accent-primary: 217 91% 60%;
+  --accent-secondary: 221 83% 53%;
+  --accent-hover: 224 76% 48%;
+
+  /* Semantic Intent Colors */
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
+  --error: 0 84% 60%;
+  --info: 199 89% 48%;
+
+  /* Surfaces & Borders */
+  --surface-elevated: 0 0% 100%;
+  --border-subtle: 240 6% 90%;
+  --border-default: 240 5% 84%;
+  --border-strong: 240 4% 65%;
+
+  /* Shadows (for depth and hierarchy) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Typography Scale */
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), 'Courier New', monospace;
+
+  /* Spacing Scale (following 8px grid system) */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Animation Durations */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+
+  /* Easing Functions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-:root {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark Mode Theme (follows Next.js/React best practices) */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #6baedd;
-    --foreground: #ededed;
+    --background-primary: 240 10% 8%;
+    --background-secondary: 240 8% 12%;
+    --background-tertiary: 240 7% 16%;
+
+    --foreground-primary: 0 0% 98%;
+    --foreground-secondary: 240 5% 84%;
+    --foreground-muted: 240 4% 65%;
+
+    --accent-primary: 217 91% 60%;
+    --accent-secondary: 221 83% 65%;
+    --accent-hover: 224 76% 70%;
+
+    --surface-elevated: 240 8% 14%;
+    --border-subtle: 240 7% 20%;
+    --border-default: 240 6% 25%;
+    --border-strong: 240 5% 35%;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
   }
+}
+
+/* Base Styles (following React/Next.js conventions) */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  /* Improved font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  /* Prevent iOS text size adjustment */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: hsl(var(--background-primary));
+  color: hsl(var(--foreground-primary));
+  font-family: var(--font-sans);
+  line-height: 1.6;
 }
 
-/* Animista fade-in animation */
+/* Focus Styles (Accessibility) */
+:focus-visible {
+  outline: 0.125rem solid hsl(var(--accent-primary)); /* 2px to rem */
+  outline-offset: 0.125rem; /* 2px to rem */
+  border-radius: var(--radius-sm);
+}
+
+/* Selection Styles */
+::selection {
+  background: hsl(var(--accent-primary) / 0.3);
+  color: hsl(var(--foreground-primary));
+}
+
+/* Scrollbar Styling (Webkit browsers) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(55 65 81) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 0.5rem; /* 8px converted to rem for scalability */
+  height: 0.5rem;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(55 65 81); /* gray-700 */
+  border-radius: 0.5rem;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(75 85 99); /* gray-600 */
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Custom scrollbar class for chat messages */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(55 65 81) transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+  width: 0.5rem; /* 8px for better visibility */
+  height: 0.5rem;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: rgb(17 24 39); /* gray-900 for dark theme */
+  border-radius: 0.5rem;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99); /* gray-600 for better visibility */
+  border-radius: 0.5rem;
+  border: 2px solid rgb(17 24 39);
+  background-clip: padding-box;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 128); /* gray-500 */
+  background-clip: padding-box;
+}
+
+.scrollbar-custom::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Animations (Performance optimized) */
 @keyframes fade-in {
-  0% {
+  from {
     opacity: 0;
   }
-  100% {
+  to {
     opacity: 1;
   }
 }
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.625rem); /* 10px to rem */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-0.625rem); /* -10px to rem */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Utility Animation Classes */
 .fade-in {
-  animation: fade-in 0.8s cubic-bezier(.39,.575,.565,1) both;
+  animation: fade-in var(--duration-normal) var(--ease-out) both;
+}
+
+.slide-up {
+  animation: slide-up var(--duration-normal) var(--ease-out) both;
+}
+
+.slide-down {
+  animation: slide-down var(--duration-normal) var(--ease-out) both;
+}
+
+.scale-in {
+  animation: scale-in var(--duration-normal) var(--ease-out) both;
+}
+
+/* Reduced Motion (Accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  @page {
+    margin: 5%; /* Percentage instead of cm for better adaptation */
+  }
 }
 

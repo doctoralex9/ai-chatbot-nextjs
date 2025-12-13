@@ -1,14 +1,22 @@
 'use client';
+
 import { useChat, UIMessage } from '@ai-sdk/react';
 import { createClient } from '@supabase/supabase-js';
 import { useRef, useEffect, useState } from 'react';
 
-// Initialize Supabase client for client-side use (READ ONLY)
+/**
+ * Supabase Client Configuration
+ * Following horizontal programming: initialized once at module level
+ */
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+/**
+ * Type Definitions
+ * Following TypeScript best practices with explicit interfaces
+ */
 interface Chat {
   id: number;
   prompt: string;
@@ -20,7 +28,6 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  // Initialize useChat - we'll load history and set messages after
   const { messages, setMessages, sendMessage, status } = useChat();
 
   // Load chat history only once on mount
@@ -70,134 +77,115 @@ export default function Chatbot() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, status]);
   
-  // Professional Loading State
+  /**
+   * Loading State
+   */
   if (isLoadingHistory) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
+      <div className="flex justify-center items-center h-screen bg-gray-900">
         <div className="flex items-center space-x-3">
-          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xl font-medium text-blue-400">Loading Wager Wizard Analysis...</p>
+          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-lg font-medium text-gray-200">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-col h-screen text-white overflow-hidden">
-      {/* Black Background with Ken Burns - Premium, distraction-free aesthetic */}
-      <div 
-        className="absolute inset-0 bg-black kenburns-top" 
-      /> 
+    <div className="flex flex-col h-screen w-screen bg-gray-900 overflow-hidden">
+      {/* Chat Container */}
+      <div className="flex-1 flex flex-col w-full max-w-full">
+        {/* Chat Header */}
+        <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-4 sm:px-6 py-3 sm:py-4 shadow-lg">
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+            <div className="text-white font-semibold">Wager Wizard Pro</div>
+            <div className="ml-auto text-gray-400 text-sm">AI Betting Analyst</div>
+          </div>
+        </div>
 
-      <div className="relative z-10 flex flex-col h-full">
-        <header className="bg-gray-800 p-4 text-center border-b border-gray-700 bg-opacity-90 backdrop-blur-sm">
-          <h1 className="text-2xl font-bold text-blue-300">📈 Wager Wizard Pro</h1>
-          <p className="text-xs text-gray-400 mt-1">AI-Powered Financial Betting Analyst for Elite Clients</p>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 bg-gray-900 scrollbar-custom">
           {messages.length === 0 && (
-            <div className="fade-in flex justify-center items-center h-full">
-              <div className="text-center max-w-md p-6 bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-lg border border-gray-700">
-                <h2 className="text-xl font-bold text-blue-300 mb-3">
-                  Welcome, Professional Client 📊
-                </h2>
-                <p className="text-gray-300 mb-4">
-                  Ask for **Verified Recommendations** and **Risk Assessments** for any major football league.
-                </p>
-                <div className="text-left text-sm text-gray-400 space-y-1">
-                  <div>✅ Premier League Odds & Analysis</div>
-                  <div>✅ Champions League Value Bets</div>
-                  <div>✅ La Liga Risk Assessment</div>
-                </div>
-                <p className="text-xs text-gray-500 mt-4">
-                  Try: &quot;Give me a high-value bet for today&#39;s Premier League matches.&quot;
-                </p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-gray-500 p-8">
+                <div className="text-5xl mb-4">💬</div>
+                <p className="text-lg font-medium text-gray-300">Start a conversation</p>
+                <p className="text-sm mt-2 text-gray-400">Ask about betting odds, predictions, or match analysis</p>
               </div>
             </div>
           )}
 
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`fade-in flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={message.id} className={`flex items-start gap-1.5 sm:gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
               {message.role === 'assistant' && (
-                <img
-                  src="/bot-avatar.jpg"
-                  alt="Bot"
-                  className="w-8 h-8 rounded-full mr-2 object-cover"
-                />
-              )}
-              <div
-                className={`max-w-md p-3 rounded-lg shadow-xl backdrop-blur-sm ${
-                  message.role === 'user'
-                    ? 'bg-blue-700 bg-opacity-90 text-white border-b-2 border-blue-400'
-                    : 'bg-gray-700 bg-opacity-90 text-blue-100 border-l-2 border-blue-400'
-                }`}
-              >
-                <div className="font-semibold text-sm mb-1">
-                  {message.role === 'user' ? 'You' : 'Wager Wizard Pro'}
+                <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg">
+                  W
                 </div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              )}
+
+              <div className={`max-w-[85%] sm:max-w-[75%] md:max-w-md lg:max-w-lg px-3 py-2 sm:px-4 sm:py-3 rounded-2xl shadow-md ${
+                message.role === 'user'
+                  ? 'bg-blue-600 text-white rounded-tr-sm'
+                  : 'bg-gray-800 text-gray-100 border border-gray-700 rounded-tl-sm'
+              }`}>
+                <div className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed break-words">
                   {message.parts
-                    .filter(part => part.type === 'text')
-                    .map(part => part.text)
+                    .filter((part) => part.type === 'text')
+                    .map((part) => part.text)
                     .join('')}
-                </p>
+                </div>
               </div>
+
               {message.role === 'user' && (
-                <img
-                  src="/user-avatar.jpg"
-                  alt="You"
-                  className="w-8 h-8 rounded-full ml-2 object-cover"
-                />
+                <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg">
+                  U
+                </div>
               )}
             </div>
           ))}
-          
+
           {status === 'streaming' && (
-            <div className="fade-in flex justify-start">
-              <img
-                src="/bot-avatar.jpg"
-                alt="Bot"
-                className="w-8 h-8 rounded-full mr-2 object-cover"
-              />
-              <div className="max-w-md p-3 rounded-lg shadow-md bg-gray-700 bg-opacity-90 text-blue-100 backdrop-blur-sm">
-                <div className="font-semibold text-sm mb-1">Wager Wizard Pro</div>
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div className="flex items-start gap-1.5 sm:gap-2 justify-start animate-in fade-in duration-300">
+              <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg">
+                W
+              </div>
+              <div className="bg-gray-800 text-gray-100 px-3 py-2 sm:px-4 sm:py-3 rounded-2xl rounded-tl-sm shadow-md border border-gray-700">
+                <div className="flex items-center space-x-1">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
                 </div>
               </div>
             </div>
           )}
 
           <div ref={bottomRef} />
-        </main>
+        </div>
 
-        <form onSubmit={handleSubmit} className="p-4 bg-gray-800 border-t border-gray-700 bg-opacity-90 backdrop-blur-sm">
-          <div className="flex items-center space-x-2">
+        {/* Chat Input */}
+        <div className="border-t border-gray-700 p-2 sm:p-4 bg-gray-800">
+          <form onSubmit={handleSubmit} className="flex gap-2 sm:gap-3">
             <input
-              className="flex-1 p-3 border border-gray-700 rounded-lg bg-gray-900 bg-opacity-50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 backdrop-blur-sm"
+              type="text"
+              className="flex-1 px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-600 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={input}
-              placeholder="Request analysis or a high-value prediction..."
+              placeholder="Ask about odds, predictions..."
               onChange={(e) => setInput(e.target.value)}
               disabled={status === 'streaming'}
             />
             <button
               type="submit"
               disabled={status === 'streaming' || !input.trim()}
-              className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-600 font-semibold min-w-[80px]"
+              className="bg-blue-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold text-sm sm:text-base shadow-lg"
             >
-              {status === 'streaming' ? '...' : 'Send'}
+              Send
             </button>
-          </div>
-          <p className="text-xs text-red-400 mt-2 text-center font-bold">
-              &#42;&#42;&#42; DISCLAIMER: Betting involves risk. Never wager more than you can afford to lose. &#42;&#42;&#42;
+          </form>
+          <p className="text-xs text-red-500 mt-2 sm:mt-3 text-center font-semibold">
+            ⚠️ DISCLAIMER: Betting involves risk. Never wager more than you can afford to lose.
           </p>
-        </form>
+        </div>
       </div>
     </div>
   );
