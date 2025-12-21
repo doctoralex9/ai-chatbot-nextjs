@@ -3,6 +3,7 @@
 import { useChat, UIMessage } from '@ai-sdk/react';
 import { createClient } from '@supabase/supabase-js';
 import { useRef, useEffect, useState } from 'react';
+import "./globals.css";
 
 /**
  * Supabase Client Configuration
@@ -105,7 +106,7 @@ export default function Chatbot() {
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 bg-gray-900 scrollbar-custom">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center text-gray-500 p-8">

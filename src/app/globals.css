@@ -131,67 +131,20 @@ body {
 }
 
 /* Scrollbar Styling (Webkit browsers) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(55 65 81) transparent;
+*::-webkit-scrollbar {
+  width: 12px;
 }
 
-::-webkit-scrollbar {
-  width: 0.5rem; /* 8px converted to rem for scalability */
-  height: 0.5rem;
+*::-webkit-scrollbar-track {
+  background: orange;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+*::-webkit-scrollbar-thumb {
+  background-color: blue;
+  border-radius: 20px;
+  border: 3px solid orange;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgb(55 65 81); /* gray-700 */
-  border-radius: 0.5rem;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(75 85 99); /* gray-600 */
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-/* Custom scrollbar class for chat messages */
-.scrollbar-custom {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(55 65 81) transparent;
-}
-
-.scrollbar-custom::-webkit-scrollbar {
-  width: 0.5rem; /* 8px for better visibility */
-  height: 0.5rem;
-}
-
-.scrollbar-custom::-webkit-scrollbar-track {
-  background: rgb(17 24 39); /* gray-900 for dark theme */
-  border-radius: 0.5rem;
-}
-
-.scrollbar-custom::-webkit-scrollbar-thumb {
-  background: rgb(75 85 99); /* gray-600 for better visibility */
-  border-radius: 0.5rem;
-  border: 2px solid rgb(17 24 39);
-  background-clip: padding-box;
-}
-
-.scrollbar-custom::-webkit-scrollbar-thumb:hover {
-  background: rgb(107 114 128); /* gray-500 */
-  background-clip: padding-box;
-}
-
-.scrollbar-custom::-webkit-scrollbar-corner {
-  background: transparent;
-}
 
 /* Animations (Performance optimized) */
 @keyframes fade-in {
