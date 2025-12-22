@@ -108,6 +108,9 @@ html {
 
   /* Prevent iOS text size adjustment */
   -webkit-text-size-adjust: 100%;
+
+  /* Enable smooth scrolling globally */
+  scroll-behavior: smooth;
 }
 
 body {
@@ -130,19 +133,37 @@ body {
   color: hsl(var(--foreground-primary));
 }
 
-/* Scrollbar Styling (Webkit browsers) */
+/* Scrollbar Styling - Modern Dark Theme */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
 *::-webkit-scrollbar {
-  width: 12px;
+  width: 10px;
 }
 
 *::-webkit-scrollbar-track {
-  background: orange;
+  background: hsl(var(--background-secondary));
+  border-radius: var(--radius-sm);
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: blue;
-  border-radius: 20px;
-  border: 3px solid orange;
+  background: linear-gradient(180deg, hsl(var(--accent-primary)), hsl(var(--accent-secondary)));
+  border-radius: var(--radius-sm);
+  border: 2px solid hsl(var(--background-secondary));
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(var(--accent-hover)), hsl(var(--accent-primary)));
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--accent-primary));
+}
+
+/* Firefox scrollbar support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--accent-primary)) hsl(var(--background-secondary));
 }
 
 

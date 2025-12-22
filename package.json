@@ -16,6 +16,7 @@
     "next": "^15.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "smoothscroll-polyfill": "^0.4.4",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -24,6 +25,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/smoothscroll-polyfill": "^0.3.4",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "tailwindcss": "^4",

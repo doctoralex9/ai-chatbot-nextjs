@@ -2,8 +2,14 @@
 
 import { useChat, UIMessage } from '@ai-sdk/react';
 import { createClient } from '@supabase/supabase-js';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useLayoutEffect } from 'react';
 import "./globals.css";
+import smoothscroll from "smoothscroll-polyfill"
+
+
+smoothscroll.polyfill();
+// Polyfill for smooth scroll behavior in older browsers
+
 
 /**
  * Supabase Client Configuration
@@ -74,9 +80,13 @@ export default function Chatbot() {
     }
   };
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Smooth scroll to bottom when new messages arrive
+  useLayoutEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   }, [messages, status]);
+
   
   /**
    * Loading State
@@ -95,7 +105,7 @@ export default function Chatbot() {
   return (
     <div className="flex flex-col h-screen w-screen bg-gray-900 overflow-hidden">
       {/* Chat Container */}
-      <div className="flex-1 flex flex-col w-full max-w-full">
+      <div className="flex-1 flex flex-col w-full max-w-full min-h-0">
         {/* Chat Header */}
         <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-4 sm:px-6 py-3 sm:py-4 shadow-lg">
           <div className="flex items-center">
@@ -106,7 +116,7 @@ export default function Chatbot() {
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 min-h-0">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center text-gray-500 p-8">
