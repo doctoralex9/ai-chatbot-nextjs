@@ -3,8 +3,11 @@
 import { useChat, UIMessage } from '@ai-sdk/react';
 import { createClient } from '@supabase/supabase-js';
 import { useRef, useEffect, useState, useLayoutEffect } from 'react';
+import Image from 'next/image';
 import "./globals.css";
-import smoothscroll from "smoothscroll-polyfill"
+import smoothscroll from "smoothscroll-polyfill";
+import botAvatar from './images/botavatar.jpg';
+import userAvatar from './images/useravatar.jpg';
 
 
 smoothscroll.polyfill();
@@ -130,8 +133,15 @@ export default function Chatbot() {
           {messages.map((message) => (
             <div key={message.id} className={`flex items-start gap-1.5 sm:gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
               {message.role === 'assistant' && (
-                <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg">
-                  W
+                <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shadow-lg ring-2 ring-blue-500/50">
+                  <Image
+                    src={botAvatar}
+                    alt="Wager Wizard Bot"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                    priority
+                  />
                 </div>
               )}
 
@@ -149,8 +159,15 @@ export default function Chatbot() {
               </div>
 
               {message.role === 'user' && (
-                <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg">
-                  U
+                <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shadow-lg ring-2 ring-blue-600/50">
+                  <Image
+                    src={userAvatar}
+                    alt="User"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                    priority
+                  />
                 </div>
               )}
             </div>
@@ -158,8 +175,15 @@ export default function Chatbot() {
 
           {status === 'streaming' && (
             <div className="flex items-start gap-1.5 sm:gap-2 justify-start animate-in fade-in duration-300">
-              <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg">
-                W
+              <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shadow-lg ring-2 ring-blue-500/50">
+                <Image
+                  src={botAvatar}
+                  alt="Wager Wizard Bot"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                  priority
+                />
               </div>
               <div className="bg-gray-800 text-gray-100 px-3 py-2 sm:px-4 sm:py-3 rounded-2xl rounded-tl-sm shadow-md border border-gray-700">
                 <div className="flex items-center space-x-1">
