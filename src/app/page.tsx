@@ -8,6 +8,7 @@ import "./globals.css";
 import smoothscroll from "smoothscroll-polyfill";
 import botAvatar from './images/botavatar.jpg';
 import userAvatar from './images/useravatar.jpg';
+import Loading from './loading';
 
 
 smoothscroll.polyfill();
@@ -95,14 +96,7 @@ export default function Chatbot() {
    * Loading State
    */
   if (isLoadingHistory) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-gray-900">
-        <div className="flex items-center space-x-3">
-          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-lg font-medium text-gray-200">Loading...</p>
-        </div>
-      </div>
-    );
+    return (Loading);
   }
 
   return (
