@@ -8,10 +8,10 @@ import "./globals.css";
 import smoothscroll from "smoothscroll-polyfill";
 import botAvatar from './images/botavatar.jpg';
 import userAvatar from './images/useravatar.jpg';
-import Loading from './loading';
+import Loading from './Loader';
 
 
-smoothscroll.polyfill();
+
 // Polyfill for smooth scroll behavior in older browsers
 
 
@@ -40,7 +40,10 @@ export default function Chatbot() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const { messages, setMessages, sendMessage, status } = useChat();
-
+  //Scroll
+  useEffect(() => {
+        smoothscroll.polyfill()
+    }, [])
   // Load chat history only once on mount
   useEffect(() => {
     const fetchChatHistory = async () => {
@@ -96,7 +99,7 @@ export default function Chatbot() {
    * Loading State
    */
   if (isLoadingHistory) {
-    return (Loading);
+    return <Loading />;
   }
 
   return (
