@@ -54,7 +54,7 @@ export default function Chatbot() {
         .order('id', { ascending: true });
 
       if (error) {
-        console.error("Error loading chat history:", error);
+        console.log(("Error loading chat history:"), error);
         setIsLoadingHistory(false);
       } else {
         // Convert Supabase history to UIMessage format
@@ -81,10 +81,27 @@ export default function Chatbot() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (input.trim()) {
+    if (input.trim() && status !== 'streaming') {
       sendMessage({ text: input });
       setInput('');
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (input.trim() && status !== 'streaming') {
+        sendMessage({ text: input });
+        setInput('');
+      }
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    // auto-resize textarea
+    e.currentTarget.style.height = 'auto';
+    e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
   };
 
   // Smooth scroll to bottom when new messages arrive
@@ -197,21 +214,29 @@ export default function Chatbot() {
 
         {/* Chat Input */}
         <div className="border-t border-gray-700 p-2 sm:p-4 bg-gray-800">
-          <form onSubmit={handleSubmit} className="flex gap-2 sm:gap-3">
-            <input
-              type="text"
-              className="flex-1 px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-600 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          <form onSubmit={handleSubmit} className="flex gap-2 sm:gap-3 items-end">
+            <textarea
+              rows={1}
+              className="flex-1 px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-600 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none overflow-hidden"
               value={input}
               placeholder="Ask about odds, predictions..."
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
               disabled={status === 'streaming'}
+              aria-label="Message input"
+              autoFocus
             />
             <button
               type="submit"
               disabled={status === 'streaming' || !input.trim()}
-              className="bg-blue-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold text-sm sm:text-base shadow-lg"
+              aria-label="Send message"
+              className="bg-blue-600 text-white px-3 py-2 sm:px-4 sm:py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold text-sm sm:text-base shadow-lg flex items-center justify-center"
+              title="Send message"
             >
-              Send
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+              <span className="ml-2 hidden sm:inline">Send</span>
             </button>
           </form>
           <p className="text-xs text-red-500 mt-2 sm:mt-3 text-center font-semibold">
