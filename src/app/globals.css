@@ -14,10 +14,18 @@
   --foreground-secondary: 240 5% 35%;
   --foreground-muted: 240 4% 55%;
 
-  /* Brand Colors */
-  --accent-primary: 217 91% 60%;
+  /* Brand Colors - Updated for Wager Wizard Pro */
+  --primary: 211 100% 50%; /* #007AFF - Electric Blue */
+  --accent-primary: 211 100% 50%;
   --accent-secondary: 221 83% 53%;
   --accent-hover: 224 76% 48%;
+  --accent-green: 160 84% 39%; /* #10B981 */
+  --accent-red: 0 84% 60%; /* #EF4444 */
+
+  /* Wager Wizard Background Colors */
+  --background-light: 220 14% 96%; /* #F3F4F6 */
+  --background-dark: 217 33% 5%; /* #0B0E11 */
+  --card-dark: 215 25% 10%; /* #15191E */
 
   /* Semantic Intent Colors */
   --success: 142 71% 45%;
@@ -36,10 +44,13 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 15px rgba(0, 122, 255, 0.3);
+  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 
   /* Typography Scale */
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), 'Courier New', monospace;
+  --font-display: 'Inter', var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 
   /* Spacing Scale (following 8px grid system) */
   --spacing-xs: 0.25rem;
@@ -54,6 +65,7 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
 
   /* Animation Durations */
   --duration-fast: 150ms;
@@ -133,37 +145,30 @@ body {
   color: hsl(var(--foreground-primary));
 }
 
-/* Scrollbar Styling - Modern Dark Theme */
+/* Scrollbar Styling - Wager Wizard Pro Theme */
 
 /* Webkit browsers (Chrome, Safari, Edge) */
 *::-webkit-scrollbar {
-  width: 10px;
+  width: 6px;
 }
 
 *::-webkit-scrollbar-track {
-  background: hsl(var(--background-secondary));
-  border-radius: var(--radius-sm);
+  background: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, hsl(var(--accent-primary)), hsl(var(--accent-secondary)));
-  border-radius: var(--radius-sm);
-  border: 2px solid hsl(var(--background-secondary));
-  transition: background var(--duration-fast) var(--ease-out);
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 20px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, hsl(var(--accent-hover)), hsl(var(--accent-primary)));
-}
-
-*::-webkit-scrollbar-thumb:active {
-  background: hsl(var(--accent-primary));
+  background-color: rgba(156, 163, 175, 0.7);
 }
 
 /* Firefox scrollbar support */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--accent-primary)) hsl(var(--background-secondary));
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
 }
 
 
@@ -250,3 +255,28 @@ body {
   }
 }
 
+/* Wager Wizard Pro Utility Classes */
+.text-gradient {
+  background: linear-gradient(to right, #60A5FA, #007AFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
