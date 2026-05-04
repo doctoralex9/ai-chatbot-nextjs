@@ -166,3 +166,4 @@ This is a private project. For issues or suggestions, please contact the reposit
 - AI powered by [Vercel AI SDK](https://sdk.vercel.ai/)
 - Odds data from [The Odds API](https://the-odds-api.com/)
 - Database by [Supabase](https://supabase.com/)
+.
