@@ -5,8 +5,6 @@ import { createClient } from '@supabase/supabase-js';
 import { useRef, useEffect, useState, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import "./globals.css";
-import botAvatar from './images/botavatar.jpg';
-import userAvatar from './images/useravatar.jpg';
 import Loading from './Loader';
 import ChatMessage from '@/components/ChatMessage';
 
@@ -41,18 +39,19 @@ export default function Chatbot() {
         setIsLoadingHistory(false);
       } else {
         // Convert Supabase history to UIMessage format
-        const historyMessages = (data || []).map(item => [
-          { 
-            id: `user-${item.id}`, 
-            role: 'user' as const, 
-            parts: [{ type: 'text' as const, text: item.prompt }] 
-          },
-          { 
-            id: `assistant-${item.id}`, 
-            role: 'assistant' as const, 
-            parts: [{ type: 'text' as const, text: item.response }] 
-          },
-        ] as UIMessage[]).flat();
+        const historyMessages: UIMessage[] = [];
+        (data || []).forEach(item => {
+          historyMessages.push({
+            id: `history-user-${item.id}`,
+            role: 'user' as const,
+            parts: [{ type: 'text' as const, text: item.prompt }]
+          });
+          historyMessages.push({
+            id: `history-assistant-${item.id}`,
+            role: 'assistant' as const,
+            parts: [{ type: 'text' as const, text: item.response }]
+          });
+        });
 
         setMessages(historyMessages);
         setIsLoadingHistory(false);
@@ -60,7 +59,7 @@ export default function Chatbot() {
     };
 
     fetchChatHistory();
-  }, []); // Only run once on mount
+  }, [setMessages]); // Added setMessages to dependency array
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -112,7 +111,7 @@ export default function Chatbot() {
             <Image
               alt="Wager Wizard Logo"
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full shadow-glow"
-              src={botAvatar}
+              src="/botavatar.jpg"
               width={40}
               height={40}
             />
@@ -149,7 +148,7 @@ export default function Chatbot() {
               .filter((part) => part.type === 'text')
               .map((part) => part.text)
               .join('')}
-            avatarSrc={message.role === 'user' ? userAvatar.src : botAvatar.src}
+            avatarSrc={message.role === 'user' ? '/useravatar.jpg' : '/botavatar.jpg'}
           />
         ))}
 
@@ -158,7 +157,7 @@ export default function Chatbot() {
             <Image
               alt="AI Avatar"
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0 shadow-sm"
-              src={botAvatar}
+              src="/botavatar.jpg"
               width={32}
               height={32}
             />
