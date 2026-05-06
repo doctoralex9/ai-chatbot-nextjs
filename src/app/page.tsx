@@ -38,11 +38,11 @@ const supabase = createClient(
 const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? 'chat_uploads';
 
 const QUICK_ACTIONS = [
-  { label: '🏆 Best Odds',     message: 'What are the best odds for upcoming football matches today?' },
-  { label: '📊 Predictions',   message: 'Give me AI-powered predictions for upcoming football matches' },
-  { label: '⚽ Live Scores',   message: 'What are the current football fixtures and how do they affect betting?' },
-  { label: '💰 Value Bets',    message: "Find value bets with positive expected value in today's fixtures" },
-  { label: '⚠️ Risk Check',   message: 'What are the key risk factors I should check before placing any bet?' },
+  { label: 'Analyze My Bet',  message: 'I want to analyze a bet I am considering. Can you walk me through the risk, EV, and whether I should place it?' },
+  { label: 'Risk Check',      message: 'What are the key risk factors I should check before placing any bet? Be brutally honest.' },
+  { label: 'Bankroll Advice', message: 'Based on responsible bankroll management, what percentage of my bankroll should I risk per bet, and why?' },
+  { label: 'Stop Losses',     message: 'I feel like I might be chasing losses. Can you help me assess my situation and tell me honestly if I should stop?' },
+  { label: 'Check EV',        message: 'Explain expected value in betting and help me calculate whether a bet I have in mind has positive or negative EV.' },
 ];
 
 const PARTICLES = [
@@ -263,7 +263,7 @@ export default function Chatbot() {
             </h1>
             <p className="text-[10px] font-semibold tracking-[0.18em] uppercase mt-0.5"
                style={{ color: 'var(--text-4)' }}>
-              AI Betting Analyst
+              AI Risk Copilot
             </p>
           </div>
         </div>
@@ -327,7 +327,7 @@ export default function Chatbot() {
                 style={{
                   width: p.size,
                   height: p.size,
-                  background: 'rgba(255,255,255,0.5)',
+                  background: 'rgba(255,255,255,0.45)',
                   left: p.left,
                   bottom: '8%',
                   animation: `particle-rise ${p.dur} ease-out ${p.delay} infinite`,
@@ -335,26 +335,24 @@ export default function Chatbot() {
               />
             ))}
 
-            {/* Wizard icon with radar rings */}
+            {/* Avatar hero with radar rings */}
             <div className="float mb-6">
               <div className="relative w-20 h-20 mx-auto">
-                {/* Radar ping rings */}
-                <div className="absolute inset-0 rounded-2xl"
+                <div className="absolute inset-0 rounded-full"
                      style={{
-                       border: '1px solid rgba(255,255,255,0.15)',
-                       animation: 'ping-expand 2.4s ease-out 0.5s infinite',
+                       border: '1px solid rgba(255,255,255,0.12)',
+                       animation: 'ping-expand 2.6s ease-out 0.5s infinite',
                      }} />
-                <div className="absolute inset-0 rounded-2xl"
+                <div className="absolute inset-0 rounded-full"
                      style={{
-                       border: '1px solid rgba(255,255,255,0.08)',
-                       animation: 'ping-expand 2.4s ease-out 1.2s infinite',
+                       border: '1px solid rgba(255,255,255,0.06)',
+                       animation: 'ping-expand 2.6s ease-out 1.3s infinite',
                      }} />
-                {/* Ambient glow */}
-                <div className="absolute inset-0 rounded-2xl blur-xl"
-                     style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.12), transparent)' }} />
-                <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center card"
-                     style={{ fontSize: '2.25rem' }}>
-                  🧙‍♂️
+                <div className="absolute inset-0 rounded-full blur-xl"
+                     style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.1), transparent)' }} />
+                <div className="relative w-20 h-20 rounded-full overflow-hidden avatar-ring-user">
+                  <Image src="/botavatar.jpg" alt="Wager Wizard" width={80} height={80}
+                         className="w-full h-full object-cover" />
                 </div>
               </div>
             </div>
@@ -362,24 +360,60 @@ export default function Chatbot() {
             <h2 className="text-2xl sm:text-3xl font-extrabold text-gradient mb-2 tracking-tight">
               Wager Wizard Pro
             </h2>
-            <p className="text-sm max-w-xs mb-8 leading-relaxed" style={{ color: 'var(--text-3)' }}>
-              AI-powered betting analysis. Get live odds, risk scores, and data-driven insights before you place a single bet.
+            <p className="text-sm max-w-sm mb-8 leading-relaxed" style={{ color: 'var(--text-3)' }}>
+              Not a tipster. An AI risk copilot that tells you when to step back — before you lose.
             </p>
 
             {/* Feature grid */}
             <div className="grid grid-cols-2 gap-3 max-w-xs w-full mb-7">
               {[
-                { icon: '📊', title: 'Risk Analysis',   desc: 'EV & probability',  delay: '0.05s' },
-                { icon: '🏆', title: 'Live Odds',       desc: 'Real-time data',    delay: '0.1s'  },
-                { icon: '🛡️', title: 'Loss Prevention', desc: 'Protect bankroll',  delay: '0.15s' },
-                { icon: '⚡', title: 'Instant AI',      desc: 'In seconds',        delay: '0.2s'  },
+                {
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  ),
+                  title: 'Risk Analysis',
+                  desc: 'EV & probability',
+                  delay: '0.05s',
+                },
+                {
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                    </svg>
+                  ),
+                  title: 'Bankroll Mode',
+                  desc: 'Max bet sizing',
+                  delay: '0.1s',
+                },
+                {
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  ),
+                  title: 'Loss Prevention',
+                  desc: 'Protect bankroll',
+                  delay: '0.15s',
+                },
+                {
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  ),
+                  title: 'Brutal Honesty',
+                  desc: 'Straight talk, no hype',
+                  delay: '0.2s',
+                },
               ].map(f => (
                 <div
                   key={f.title}
                   className="card p-3 text-left reveal-up hover:scale-[1.03]"
                   style={{ animationDelay: f.delay, transition: 'all 0.22s cubic-bezier(0.4,0,0.2,1)' }}
                 >
-                  <div className="text-xl mb-1.5">{f.icon}</div>
+                  <div className="mb-2" style={{ color: 'var(--text-3)' }}>{f.icon}</div>
                   <div className="text-xs font-bold" style={{ color: 'var(--text-1)' }}>{f.title}</div>
                   <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-4)' }}>{f.desc}</div>
                 </div>
@@ -387,7 +421,7 @@ export default function Chatbot() {
             </div>
 
             <p className="text-xs" style={{ color: 'var(--text-4)' }}>
-              Use the quick actions below or type your question
+              Use the quick actions below or describe a bet
             </p>
           </div>
         )}
