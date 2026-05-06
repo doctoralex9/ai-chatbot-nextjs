@@ -15,73 +15,107 @@ interface BetInputFormProps {
 }
 
 export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFormProps) {
-  const [formData, setFormData] = useState<BetFormData>({
-    odds: '',
-    stake: '',
-    teams: '',
-    bankroll: '',
-  });
-
+  const [formData, setFormData] = useState<BetFormData>({ odds: '', stake: '', teams: '', bankroll: '' });
   const [showForm, setShowForm] = useState(false);
+  const [errors, setErrors]     = useState<Partial<Record<keyof BetFormData, string>>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name as keyof BetFormData]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validate = (): boolean => {
+    const next: Partial<Record<keyof BetFormData, string>> = {};
+    if (!formData.teams.trim()) next.teams = 'Required';
+    if (!formData.odds.trim())  next.odds  = 'Required';
+    if (!formData.stake.trim()) next.stake = 'Required';
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (formData.odds && formData.stake && formData.teams) {
-      onSubmit(formData);
-      setFormData({ odds: '', stake: '', teams: '', bankroll: '' });
-    }
+    if (!validate()) return;
+    onSubmit(formData);
+    setFormData({ odds: '', stake: '', teams: '', bankroll: '' });
+    setShowForm(false);
   };
 
   return (
-    <div className="w-full max-w-full sm:max-w-2xl mx-auto mb-4 px-0 sm:px-2">
+    <div className="w-full mb-3">
+      {/* Toggle button */}
       <button
-        onClick={() => setShowForm(!showForm)}
-        className="w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-3xl font-bold shadow-xl shadow-orange-500/30 hover:from-orange-500 hover:to-orange-400 hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 active:scale-95 transform btn-premium slide-down"
+        type="button"
+        onClick={() => setShowForm(v => !v)}
+        disabled={isLoading}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
+                   transition-all duration-200 active:scale-95 disabled:opacity-50"
+        style={{
+          background:  showForm ? 'rgba(249,115,22,0.12)' : 'rgba(249,115,22,0.09)',
+          border:      '1px solid rgba(249,115,22,0.28)',
+          color:       '#FB923C',
+        }}
       >
-        {showForm ? '✕ Hide Bet Input' : '⚡ Analyze a Bet'}
+        <svg
+          className={`w-4 h-4 transition-transform duration-300 ${showForm ? 'rotate-45' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+        {showForm ? 'Close Analyzer' : 'Analyze a Bet'}
       </button>
 
+      {/* Form panel */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gradient-to-br from-[#15191E] to-[#11151A] p-4 sm:p-5 rounded-[28px] space-y-4 mt-4 border border-blue-900/30 shadow-xl shadow-blue-900/25 message-appear">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2 group">
-              <label className="block text-sm font-bold mb-2 text-blue-300 group-focus-within:text-blue-200 transition-colors">
-                🏆 Teams/Matchup
-              </label>
-              <input
-                type="text"
-                name="teams"
-                value={formData.teams}
-                onChange={handleChange}
-                placeholder="e.g., Real Madrid vs Barcelona"
-                className="w-full px-3 py-3 border-2 rounded-2xl bg-[#131B26] border-blue-900/30 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 transition-all duration-300 font-medium shadow-lg shadow-blue-900/10 hover:border-blue-800/50"
-                required
-              />
-            </div>
+        <form
+          onSubmit={handleSubmit}
+          className="mt-3 p-4 rounded-xl space-y-3 message-appear"
+          style={{ background: '#0C1722', border: '1px solid rgba(59,130,246,0.15)' }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>
+            Bet Details
+          </p>
 
-            <div className="group">
-              <label className="block text-sm font-bold mb-2 text-cyan-300 group-focus-within:text-cyan-200 transition-colors">
-                📊 Odds (Decimal or US Format)
+          {/* Matchup */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#93C5FD' }}>
+              Matchup
+            </label>
+            <input
+              type="text"
+              name="teams"
+              value={formData.teams}
+              onChange={handleChange}
+              placeholder="Real Madrid vs Barcelona"
+              className={`w-full px-3 py-2.5 rounded-lg text-sm input-field ${errors.teams ? 'border-red-500/50' : ''}`}
+            />
+            {errors.teams && <p className="mt-1 text-[10px] text-red-400">{errors.teams}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Odds */}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#67E8F9' }}>
+                Odds
               </label>
               <input
                 type="text"
                 name="odds"
                 value={formData.odds}
                 onChange={handleChange}
-                placeholder="e.g., 2.50 or -110"
-                className="w-full px-3 py-3 border-2 rounded-2xl bg-[#131B26] border-cyan-900/30 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/25 transition-all duration-300 font-medium shadow-lg shadow-cyan-900/10 hover:border-cyan-800/50"
-                required
+                placeholder="2.50 or -110"
+                className={`w-full px-3 py-2.5 rounded-lg text-sm input-field ${errors.odds ? 'border-red-500/50' : ''}`}
               />
+              {errors.odds && <p className="mt-1 text-[10px] text-red-400">{errors.odds}</p>}
             </div>
 
-            <div className="group">
-              <label className="block text-sm font-bold mb-2 text-green-300 group-focus-within:text-green-200 transition-colors">
-                💰 Stake (€)
+            {/* Stake */}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6EE7B7' }}>
+                Stake (€)
               </label>
               <input
                 type="number"
@@ -89,16 +123,18 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
                 value={formData.stake}
                 onChange={handleChange}
                 placeholder="50"
-                className="w-full px-3 py-3 border-2 rounded-2xl bg-[#131B26] border-green-900/30 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/25 transition-all duration-300 font-medium shadow-lg shadow-green-900/10 hover:border-green-800/50"
-                required
-                step="0.01"
                 min="0"
+                step="0.01"
+                className={`w-full px-3 py-2.5 rounded-lg text-sm input-field ${errors.stake ? 'border-red-500/50' : ''}`}
               />
+              {errors.stake && <p className="mt-1 text-[10px] text-red-400">{errors.stake}</p>}
             </div>
 
-            <div className="group">
-              <label className="block text-sm font-bold mb-2 text-purple-300 group-focus-within:text-purple-200 transition-colors">
-                🎲 Bankroll (€) - Optional
+            {/* Bankroll */}
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#C4B5FD' }}>
+                Bankroll (€){' '}
+                <span className="font-normal" style={{ color: 'var(--text-3)' }}>— Optional</span>
               </label>
               <input
                 type="number"
@@ -106,33 +142,39 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
                 value={formData.bankroll}
                 onChange={handleChange}
                 placeholder="500"
-                className="w-full px-3 py-3 border-2 rounded-2xl bg-[#131B26] border-purple-900/30 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 transition-all duration-300 font-medium shadow-lg shadow-purple-900/10 hover:border-purple-800/50"
-                step="0.01"
                 min="0"
+                step="0.01"
+                className="w-full px-3 py-2.5 rounded-lg text-sm input-field"
               />
             </div>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-3xl font-bold shadow-xl shadow-green-500/30 hover:from-green-500 hover:to-emerald-500 hover:shadow-2xl hover:shadow-green-500/50 transition-all duration-300 active:scale-95 hover:scale-105 transform btn-premium disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none mt-1"
+            className="w-full py-2.5 px-4 rounded-xl text-sm font-bold transition-all duration-200
+                       active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            style={{
+              background:  'linear-gradient(135deg, #059669, #047857)',
+              color:       '#fff',
+              boxShadow:   '0 4px 14px rgba(5,150,105,0.35)',
+            }}
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="inline-block w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
-                Analyzing Risk...
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Analyzing Risk…
               </span>
             ) : (
-              '✓ Analyze Risk & Value'
+              'Analyze Risk & Value →'
             )}
           </button>
         </form>
       )}
-
-      <p className="text-xs text-blue-400 dark:text-blue-400 text-center mt-2 font-medium">
-        🤖 AI-powered risk assessment & EV calculation
-      </p>
     </div>
   );
 }

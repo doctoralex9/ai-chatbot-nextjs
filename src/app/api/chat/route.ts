@@ -1,8 +1,22 @@
-import { openai } from '@ai-sdk/openai';
+﻿import { openai } from '@ai-sdk/openai';
 import { streamText, UIMessage, convertToModelMessages, dynamicTool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { analyzeBet } from '@/lib/betAnalysis';
+
+type MessageWithText = {
+  id?: string;
+  role?: 'user' | 'assistant';
+  text?: string;
+  parts?: unknown;
+};
+
+type MessagePart =
+  | { type: 'text'; text?: string }
+  | { type: 'image'; imageUrl: string; alt: string };
+
+const isTextPart = (part: unknown): part is { type: 'text'; text?: string } =>
+  typeof part === 'object' && part !== null && (part as { type?: string }).type === 'text';
 
 // Initialize Supabase client for server-side operations (HIGH SECURITY)
 const supabase = createClient(
@@ -33,7 +47,7 @@ The AI MUST filter the returned data to find specific matches/teams requested by
 
     const parsed = OddsToolInput.safeParse(input);
     if (!parsed.success) {
-      // Invalid input — log for debugging and fall back to safe defaults
+      // Invalid input β€” log for debugging and fall back to safe defaults
       console.warn('getUpcomingFootballOdds: invalid input, using defaults', parsed.error);
     }
 
@@ -76,11 +90,11 @@ The AI MUST filter the returned data to find specific matches/teams requested by
 
       const data = await response.json();
 
-      if (data.error || !data || data.length === 0) {
+      if (!data || data.error || data.length === 0) {
         return `NODATA: No upcoming ${apiSport.replace('soccer_', '').replace('_', ' ')} matches found. Please check a different league or date.`;
       }
 
-      // 🛠️ Professional Fix: Return structured JSON for easier, faster AI analysis.
+      // π› οΈ Professional Fix: Return structured JSON for easier, faster AI analysis.
       const matches = Array.isArray(data) ? data.slice(0, 5).map((game: unknown) => {
         if (!isRecord(game)) return null;
 
@@ -195,14 +209,16 @@ export async function POST(req: Request) {
 
     try {
       // Process messages: extract image URLs from text and add as image parts
-      const processedMessages: UIMessage[] = messages.map((msg: any) => {
+      const processedMessages: UIMessage[] = messages.map((msg) => {
+        const message = msg as MessageWithText;
+
         // If message already has explicit parts (with images), return as-is
-        if (Array.isArray(msg.parts)) {
+        if (Array.isArray(message.parts)) {
           return msg as UIMessage;
         }
 
         // For text-only messages, check if they contain image URLs to extract
-        let textContent = msg.text || '';
+        const textContent = message.text ?? '';
         const urlRegex = /https:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)/gi;
         const imageUrls = textContent.match(urlRegex) || [];
 
@@ -214,7 +230,7 @@ export async function POST(req: Request) {
             .trim();
 
           // Build parts array with text and images
-          const parts: any[] = [];
+          const parts: MessagePart[] = [];
           if (cleanText) {
             parts.push({ type: 'text' as const, text: cleanText });
           }
@@ -285,11 +301,11 @@ Respond directly to questions about betting risks or responsible gambling. Disco
 
           if (lastUserMessage && assistantMessage) {
             // Extract text from parts array, handling both text and image types
-            const extractText = (parts: any[]) => {
+            const extractText = (parts: unknown): string => {
               if (!Array.isArray(parts)) return '';
               return parts
-                .filter((p: any) => p.type === 'text')
-                .map((p: any) => p.text || '')
+                .filter(isTextPart)
+                .map((p) => p.text || '')
                 .join('');
             };
 
@@ -298,8 +314,8 @@ Respond directly to questions about betting risks or responsible gambling. Disco
 
             const { error } = await supabase.from('chat_history').insert({
               user_id: 'guest',
-              prompt: prompt,
-              response: response,
+              prompt,
+              response,
             });
 
             if (error) {
