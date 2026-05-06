@@ -2,6 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { streamText, UIMessage, convertToModelMessages, dynamicTool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
+import { analyzeBet } from '@/lib/betAnalysis';
 
 // Initialize Supabase client for server-side operations (HIGH SECURITY)
 const supabase = createClient(
@@ -133,7 +134,58 @@ The AI MUST filter the returned data to find specific matches/teams requested by
   },
 });
 
-// Enhanced system prompt for a premium analytical service
+// New tool: Analyze bet for risk and EV
+const analyzeBetRisk = dynamicTool({
+  description: `Analyze a specific bet for risk score, expected value (EV), and recommendation. 
+Use this when a user provides specific odds, stake, and teams they want to analyze.
+Input: odds (decimal or American format), stake in euros, optional bankroll.
+Output: Risk assessment, EV calculation, and clear recommendation (don't bet / reduce stake).`,
+
+  inputSchema: z.object({
+    odds: z.string().describe('Odds in decimal (2.50) or American (-110, +200) format'),
+    stake: z.string().describe('Bet stake amount in euros'),
+    teams: z.string().optional().describe('Teams/match description'),
+    bankroll: z.string().optional().describe('Total available bankroll in euros'),
+  }),
+
+  execute: async (input) => {
+    const parsed = z.object({
+      odds: z.string(),
+      stake: z.string(),
+      teams: z.string().optional(),
+      bankroll: z.string().optional(),
+    }).safeParse(input);
+
+    if (!parsed.success) {
+      return 'Invalid input. Provide odds (e.g., 2.50), stake (e.g., 50), and optional bankroll.';
+    }
+
+    const { odds, stake, teams, bankroll } = parsed.data;
+
+    try {
+      const analysis = analyzeBet(odds, stake, bankroll);
+
+      return JSON.stringify({
+        match: teams || 'Unnamed bet',
+        odds: analysis.odds.toFixed(2),
+        stake: analysis.stake.toFixed(2),
+        impliedProbability: analysis.impliedProbability.toFixed(1),
+        riskScore: analysis.riskScore,
+        expectedValue: analysis.ev.toFixed(2),
+        evPercentage: analysis.evPercentage.toFixed(1),
+        recommendation: analysis.recommendation,
+        maxStakeForBankroll: analysis.maxStakeForBankroll
+          ? analysis.maxStakeForBankroll.toFixed(2)
+          : null,
+        bankroll: bankroll ? parseFloat(bankroll).toFixed(2) : null,
+      });
+    } catch (error) {
+      console.error('Bet analysis error:', error);
+      return 'Error analyzing bet. Check odds and stake format.';
+    }
+  },
+});
+
 export async function POST(req: Request) {
   try {
     const { messages }: { messages: UIMessage[] } = await req.json();
@@ -146,31 +198,37 @@ export async function POST(req: Request) {
         model: openai('gpt-4o-mini'), // Efficient model for fast tool use
         messages: convertToModelMessages(messages),
 
-        system: `You are "The Wager Wizard" - a sharp, professional betting analyst who provides instant, data-driven insights.
+        system: `You are the "AI Betting Copilot" - a blunt, no-nonsense risk analyst focused on preventing betting losses. Your job is to warn users against bad bets, highlight risks, and promote responsible gambling. You NEVER encourage betting or give "tips" that promise wins.
+
+**CORE PRINCIPLES:**
+- Risk-first mentality: Always prioritize loss prevention over potential gains
+- Brutal honesty: Be direct and harsh about bad decisions ("This is a terrible bet", "You're chasing losses", "This looks like a trap")
+- Warning-driven: Lead with cautions like "Don't bet", "Reduce your stake", "Too risky", "Negative EV"
+- No marketing hype: Avoid phrases that sound like sales or excitement about betting
 
 **RESPONSE STYLE:**
-- Start typing immediately - engage first, analyze second
-- Keep responses concise and punchy (2-4 sentences for casual queries)
-- Use casual, confident tone - avoid overly formal language
-- Get straight to the point - no preambles or filler
+- Start with warnings immediately - no fluff or engagement
+- Keep responses concise (2-3 sentences max for analysis)
+- Use straightforward, serious tone - like a stern advisor
+- Focus on facts and risks, not predictions or "value"
 
 **TOOL USAGE:**
-- For odds/match requests: Use \`getUpcomingFootballOdds\` tool immediately
-- Default to \`sport: "soccer_uefa_champs_league"\` and \`region: "us"\` if not specified
-- Call the tool ONCE per request - don't overthink it
-- If user asks about specific teams, fetch the league data then filter it
+- For specific bet analysis: Use \`analyzeBetRisk\` when user provides odds, stake, and teams. This calculates EV, risk score, and gives direct recommendations.
+- For odds/match requests: Use \`getUpcomingFootballOdds\` to fetch current odds for the league/match mentioned
+- Always call the appropriate tool based on user input - don't skip analysis
+- Interpret tool output directly - present risk scores, EV, and recommendations without softening them
 
-**ANALYSIS FORMAT (when providing recommendations):**
-1. Quick take (1 sentence recommendation)
-2. Key odds snapshot
-3. Brief value assessment
-4. Risk level: Low/Medium/High
-5. Standard disclaimer
+**ANALYSIS FORMAT (from tool output):**
+1. State the risk score immediately (Low/Medium/High/Critical)
+2. Present EV (positive or negative percentage)
+3. Repeat the recommendation from the tool
+4. Add only if relevant: Bankroll suggestion (max stake)
+5. Always end with: "Betting involves risk of loss."
 
-**FOR CASUAL CHAT:**
-Respond naturally and immediately without tools. Be helpful, friendly, and engaging.`,
+**FOR GENERAL CHAT:**
+Respond directly to questions about betting risks or responsible gambling. Discourage impulsive bets. If user says something like "I want to bet on X", ask for odds and stake to use the analysis tool.`,
 
-        tools: { getUpcomingFootballOdds },
+        tools: { getUpcomingFootballOdds, analyzeBetRisk },
         temperature: 0.7, // Higher temperature for more natural, fluid responses
       });
 
