@@ -1,12 +1,16 @@
 import Image from 'next/image';
 
+type MessagePart =
+  | { type: 'text'; text: string }
+  | { type: 'image'; imageUrl: string; alt?: string };
+
 interface ChatMessageProps {
   role: 'user' | 'assistant';
-  content: string;
+  parts: MessagePart[];
   avatarSrc: string;
 }
 
-export default function ChatMessage({ role, content, avatarSrc }: ChatMessageProps) {
+export default function ChatMessage({ role, parts, avatarSrc }: ChatMessageProps) {
   const isUser = role === 'user';
 
   return (
@@ -25,8 +29,22 @@ export default function ChatMessage({ role, content, avatarSrc }: ChatMessagePro
             : 'bg-white dark:bg-[#15191E] rounded-tl-sm border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300 max-w-[85%] sm:max-w-[80%]'
         }`}
       >
-        <div className="whitespace-pre-wrap leading-relaxed break-words">
-          {content}
+        <div className="space-y-2 leading-relaxed">
+          {parts.map((part, index) =>
+            part.type === 'text' ? (
+              <div key={index} className="whitespace-pre-wrap break-words">
+                {part.text}
+              </div>
+            ) : (
+              <div key={index} className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#101318]">
+                <img
+                  src={part.imageUrl}
+                  alt={part.alt ?? 'Attachment'}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>

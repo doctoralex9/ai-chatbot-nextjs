@@ -21,6 +21,10 @@ const supabase = createClient(
 export default function Chatbot() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [input, setInput] = useState('');
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState('');
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const { messages, setMessages, sendMessage, status } = useChat();
@@ -61,20 +65,107 @@ export default function Chatbot() {
     fetchChatHistory();
   }, [setMessages]); // Added setMessages to dependency array
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (input.trim() && status !== 'streaming') {
-      sendMessage({ text: input });
-      setInput('');
+  useEffect(() => {
+    if (!attachmentFile) {
+      setAttachmentPreviewUrl('');
+      return;
     }
+
+    const preview = URL.createObjectURL(attachmentFile);
+    setAttachmentPreviewUrl(preview);
+
+    return () => {
+      URL.revokeObjectURL(preview);
+    };
+  }, [attachmentFile]);
+
+  // Smooth scroll to bottom when new messages arrive
+  useLayoutEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages, status]);
+
+  const uploadAttachment = async (file: File) => {
+    const safeFileName = `screenshots/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+    const { data, error } = await supabase.storage
+      .from('chat_uploads')
+      .upload(safeFileName, file, { upsert: true });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('chat_uploads')
+      .getPublicUrl(safeFileName);
+
+    return publicUrlData.publicUrl;
+  };
+
+  const handleAttachmentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+
+    setAttachmentFile(file);
+  };
+
+  const handleRemoveAttachment = () => {
+    setAttachmentFile(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if ((input.trim().length === 0 && !attachmentFile) || status === 'streaming') {
+      return;
+    }
+
+    let attachmentUrl = '';
+
+    if (attachmentFile) {
+      setIsUploadingAttachment(true);
+      try {
+        attachmentUrl = await uploadAttachment(attachmentFile);
+      } catch (error) {
+        console.error('Attachment upload failed:', error);
+      } finally {
+        setIsUploadingAttachment(false);
+      }
+    }
+
+    if (attachmentUrl) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: `user-attachment-${Date.now()}`,
+          role: 'user',
+          parts: [
+            { type: 'text' as const, text: input.trim() || 'Screenshot attached' },
+            { type: 'image' as const, imageUrl: attachmentUrl, alt: 'Attached screenshot' },
+          ],
+        } as any,
+      ]);
+    }
+
+    sendMessage({
+      text: input.trim() + (attachmentUrl ? `\n\nAttached screenshot: ${attachmentUrl}` : ''),
+    });
+
+    setInput('');
+    setAttachmentFile(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (input.trim() && status !== 'streaming') {
-        sendMessage({ text: input });
-        setInput('');
+      if ((input.trim().length > 0 || attachmentFile) && status !== 'streaming') {
+        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
       }
     }
   };
@@ -86,14 +177,6 @@ export default function Chatbot() {
     e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
   };
 
-  // Smooth scroll to bottom when new messages arrive
-  useLayoutEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [messages, status]);
-
-  
   /**
    * Loading State
    */
@@ -144,10 +227,11 @@ export default function Chatbot() {
           <ChatMessage
             key={message.id}
             role={message.role as 'user' | 'assistant'}
-            content={message.parts
-              .filter((part) => part.type === 'text')
-              .map((part) => part.text)
-              .join('')}
+            parts={message.parts.map((part) =>
+              part.type === 'text'
+                ? { type: 'text' as const, text: part.text }
+                : { type: 'image' as const, imageUrl: (part as any).imageUrl ?? (part as any).image_url ?? '' }
+            )}
             avatarSrc={message.role === 'user' ? '/useravatar.jpg' : '/botavatar.jpg'}
           />
         ))}
@@ -202,33 +286,61 @@ export default function Chatbot() {
             <span className="font-bold text-amber-600 dark:text-amber-500">DISCLAIMER:</span> Betting involves risk. Never wager more than you can afford to lose.
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="relative flex items-center">
+        {attachmentPreviewUrl && (
+          <div className="mb-3 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#15191E] shadow-sm">
+            <img src={attachmentPreviewUrl} alt="Selected screenshot preview" className="w-full h-auto object-cover" />
+            <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-[#11151A]">
+              <span>Screenshot attached</span>
+              <button
+                type="button"
+                onClick={handleRemoveAttachment}
+                className="font-semibold text-[hsl(var(--primary))] hover:text-blue-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="relative flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAttachmentChange}
+          />
           <button
             type="button"
-            className="absolute left-2 sm:left-3 p-1 sm:p-1.5 text-gray-400 hover:text-[hsl(var(--primary))] transition-colors z-10"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center justify-center shrink-0 w-11 h-11 rounded-full bg-gray-100 dark:bg-[#15191E] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#1B222A] transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a4 4 0 014-4h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 13l2.5 3 3.5-4.5M8 10h.01" />
             </svg>
           </button>
           <textarea
-            className="w-full bg-gray-100 dark:bg-[#15191E] text-gray-900 dark:text-white placeholder-gray-400 text-base sm:text-lg rounded-3xl py-4 sm:py-5 pl-11 sm:pl-12 pr-12 sm:pr-13 focus:outline-none focus:ring-4 focus:ring-[hsl(var(--primary))]/60 border-2 border-gray-300 dark:border-gray-700 focus:border-[hsl(var(--primary))] transition-all duration-200 shadow-lg hover:shadow-xl resize-none max-h-40 overflow-y-auto leading-relaxed font-medium"
-            placeholder="Ask about odds, predictions..."
+            className="flex-1 min-h-[3.5rem] max-h-40 bg-gray-100 dark:bg-[#15191E] text-gray-900 dark:text-white placeholder-gray-400 text-base sm:text-lg rounded-3xl py-4 sm:py-5 px-4 pr-16 focus:outline-none focus:ring-4 focus:ring-[hsl(var(--primary))]/60 border-2 border-gray-300 dark:border-gray-700 focus:border-[hsl(var(--primary))] transition-all duration-200 shadow-lg hover:shadow-xl resize-none overflow-y-auto leading-relaxed font-medium"
+            placeholder="Ask about odds, upload ticket screenshot, or say hello..."
             rows={1}
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            disabled={status === 'streaming'}
+            disabled={status === 'streaming' || isUploadingAttachment}
             autoFocus
           />
           <button
             type="submit"
-            disabled={status === 'streaming' || !input.trim()}
-            className="absolute right-2 sm:right-2.5 p-2 bg-[hsl(var(--primary))] text-white rounded-full shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={status === 'streaming' || (!input.trim() && !attachmentFile) || isUploadingAttachment}
+            className="absolute right-4 p-3 bg-[hsl(var(--primary))] text-white rounded-full shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
+            {isUploadingAttachment ? (
+              <span className="text-xs font-semibold">Uploading</span>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              </svg>
+            )}
           </button>
         </form>
       </footer>

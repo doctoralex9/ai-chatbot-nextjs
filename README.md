@@ -1,15 +1,128 @@
-# Wager Wizard Pro
+# AI Betting Copilot
 
-An AI-powered betting analyst chatbot that provides professional, data-driven betting analysis for football matches. Built with Next.js 15, AI SDK, and real-time odds integration.
+A focused betting risk-management assistant that helps users avoid bad bets, manage bankroll and make smarter staking decisions. This project is built on a solid technical foundation: Next.js, Supabase chat history, live odds integration, image attachment support and mobile-first responsiveness.
 
-## Features
+## Product Positioning
 
-- **Real-Time Odds Integration** - Fetches live betting odds from The Odds API for major football leagues
-- **AI-Powered Analysis** - Uses OpenAI GPT-4o-mini for intelligent match analysis and betting recommendations
-- **Persistent Chat History** - Conversation history stored in Supabase for seamless user experience
-- **Responsive Design** - Mobile-first UI with Tailwind CSS 4
-- **Streaming Responses** - Real-time AI responses with streaming support
-- **Risk Management** - Built-in risk assessment and bankroll management advice
+> Το προϊόν δεν είναι prediction tipster.
+
+Το MVP πρέπει να είναι:
+
+- risk-first, όχι “βάλε αυτό το στοίχημα”
+- honest warning-driven
+- focused σε μείωση losses
+- όχι σε “αξία” που υπόσχεται κέρδος
+
+## Why this pivot
+
+Η αγορά των generic AI predictions είναι κορεσμένη και δύσκολη για monetization.
+
+Το σωστό niche για αυτό το project είναι:
+
+- **AI Betting Copilot (risk-first)**
+- Προτείνει **“μην παίξεις”**, **“μείωσε stake”**, **“overbet”**, **“αρνητικό EV”**
+- Αυτή η θέση χτίζει εμπιστοσύνη και έχει διαφοροποίηση
+
+## Current Status
+
+Το project έχει ήδη χρήσιμα στοιχεία που πρέπει να κρατηθούν:
+
+- Next.js app και UI
+- Supabase history persistence
+- Odds API integration
+- Βασικό chat / AI pipeline
+- Mobile-first responsive chat experience
+- Screenshot/image attachment support for ticket uploads
+
+Αυτό που πρέπει να σταματήσει τώρα:
+
+- generic AI betting recommendations
+- fancy prediction logic χωρίς direction
+- feature-bloat πριν αποφασίσουμε το product
+
+## Planned MVP
+
+### Core value
+
+Αντί για «predict the best bet», το MVP πρέπει να κάνει:
+
+1. **Bet Input Analyzer**
+   - Ο χρήστης εισάγει τα bets του
+   - Το σύστημα δίνει συνολική πιθανότητα, risk score, EV estimate
+   - Recommendation: **“μην παίξεις” / “μείωσε stake” / “too risky”**
+
+2. **Bankroll Mode**
+   - Ο χρήστης βάζει πόσα έχει διαθέσιμα
+   - Το σύστημα προτείνει max bet size και risk per bet
+
+3. **Brutal honesty AI**
+   - Straight talk, όχι marketing
+   - “This is a bad bet”, “You are chasing losses”, “This looks like a trap”
+
+## 14-day execution plan
+
+### Day 1–2: Product decision
+
+- Οριστικοποιούμε το positioning:
+  - **AI Betting Copilot που μειώνει losses — όχι tipster**
+- Σταματάμε να διορθώνουμε τυχαία bugs ή να γράφουμε features που δεν έχουν σχέση με το νέο product
+
+### Day 3–5: MVP build
+
+- Σχεδιάζουμε simple bet input form
+- Προσθέτουμε basic analysis logic
+- Δίνουμε clear output:
+  - risk score
+  - EV direction
+  - betting recommendation
+
+### Day 6–7: Deploy
+
+- Deploy σε Vercel
+- Κάνουμε sanity check στα βασικά flows
+- Ελέγχουμε ότι το app είναι shareable
+
+### Day 8–14: Early go-to-market
+
+- Ξεκινάμε TikTok push με daily posts
+- Messaging:
+  - “AI stopped me from losing 100€”
+  - “Don’t bet before you see this”
+  - “Most people lose because of THIS”
+- Secondary channel: LinkedIn με building journey και product story
+- Στόχος: first 100 users
+
+## Monetization Path
+
+### Phase 1 (0–2 εβδομάδες)
+
+- free tool
+- στόχος: traffic και engagement
+
+### Phase 2 (2–4 εβδομάδες)
+
+- affiliate links με Stoiximan / Novibet / άλλες πλατφόρμες
+- φέρνουν πρώτα χρήματα χωρίς να χρειάζεται product-market fit
+
+### Phase 3 (1–2 μήνες)
+
+- premium λειτουργία (€5–10)
+- πρόσθετα analytics, bankroll planner, προειδοποιήσεις
+
+## What to keep in the repo
+
+### Keep
+
+- Next.js setup
+- chat UI foundation
+- Supabase history
+- Odds API integration
+
+### Avoid investing more in
+
+- “AI predictions logic”
+- fancy tips prompts
+- generic recommendation flow
 
 ## Tech Stack
 
@@ -64,6 +177,15 @@ CREATE TABLE chat_history (
 CREATE INDEX idx_chat_history_user_id ON chat_history(user_id);
 ```
 
+Create a Supabase Storage bucket for attachments:
+
+```bash
+# In Supabase Storage create a public bucket named:
+chat_uploads
+```
+
+Use this bucket to store screenshot attachments uploaded by users.
+
 ## Installation
 
 1. Clone the repository:
@@ -101,54 +223,19 @@ pnpm dev
 - `npm start` - Start the production server
 - `npm run lint` - Run ESLint
 
-## Supported Football Leagues
-
-The application supports multiple football leagues including:
-
-- UEFA Champions League (`soccer_uefa_champs_league`)
-- English Premier League (`soccer_epl`)
-- Spanish La Liga (`soccer_spain_la_liga`)
-- And more...
-
-Odds are available in multiple formats:
-- US (American)
-- UK (British)
-- EU (European decimal)
-
 ## Usage
 
 1. Open the application in your browser
-2. Type your question about football matches, odds, or predictions
-3. The AI will fetch real-time odds and provide professional analysis
-4. Receive betting recommendations with risk assessment
-
-Example queries:
-- "What are the odds for the next Champions League matches?"
-- "Give me an analysis of Real Madrid vs Bayern"
-- "What's the best value bet for Premier League this week?"
-
-## Project Structure
-
-```
-ai-chatbot-nextjs/
-├── src/
-│   └── app/
-│       ├── api/
-│       │   └── chat/
-│       │       └── route.ts       # Chat API endpoint with AI integration
-│       ├── layout.tsx              # Root layout
-│       └── page.tsx                # Main chatbot interface
-├── public/                         # Static assets
-├── .env.local                      # Environment variables
-└── package.json                    # Project dependencies
-```
+2. Use the app as an early **AI Betting Copilot**
+3. Attach ticket screenshots or odds slips to get context-aware risk feedback
+4. Focus on evaluating risk and reducing losses rather than finding the “best bet”
 
 ## Important Disclaimer
 
 This application is for informational and educational purposes only. Betting involves significant financial risk. Users should:
 
 - Never wager more than they can afford to lose
-- Understand that all betting predictions are probabilistic, not guaranteed
+- Understand that all betting decisions are probabilistic, not guaranteed
 - Comply with local gambling laws and regulations
 - Use the tool responsibly
 
@@ -156,14 +243,9 @@ This application is for informational and educational purposes only. Betting inv
 
 This project is private and proprietary.
 
-## Contributing
-
-This is a private project. For issues or suggestions, please contact the repository owner.
-
 ## Acknowledgments
 
 - Built with [Next.js](https://nextjs.org/)
 - AI powered by [Vercel AI SDK](https://sdk.vercel.ai/)
 - Odds data from [The Odds API](https://the-odds-api.com/)
 - Database by [Supabase](https://supabase.com/)
-.
