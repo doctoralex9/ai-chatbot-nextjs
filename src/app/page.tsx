@@ -8,6 +8,28 @@ import "./globals.css";
 import Loading from './Loader';
 import ChatMessage from '@/components/ChatMessage';
 
+type MessagePart =
+  | { type: 'text'; text: string }
+  | { type: 'image'; imageUrl: string; alt?: string };
+
+const convertToMessagePart = (part: unknown): MessagePart => {
+  if (part && typeof part === 'object' && 'type' in part) {
+    const p = part as Record<string, unknown>;
+    if (p.type === 'text' && typeof p.text === 'string') {
+      return { type: 'text', text: p.text };
+    } else if (p.type === 'image') {
+      return {
+        type: 'image',
+        imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl :
+                 typeof p.image_url === 'string' ? p.image_url : '',
+        alt: typeof p.alt === 'string' ? p.alt : undefined
+      };
+    }
+  }
+  // Fallback for unknown types
+  return { type: 'text', text: String(part) };
+};
+
 
 /**
  * Supabase Client Configuration
@@ -88,7 +110,7 @@ export default function Chatbot() {
 
   const uploadAttachment = async (file: File) => {
     const safeFileName = `screenshots/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('chat_uploads')
       .upload(safeFileName, file, { upsert: true });
 
@@ -146,10 +168,10 @@ export default function Chatbot() {
           id: `user-attachment-${Date.now()}`,
           role: 'user',
           parts: [
-            { type: 'text' as const, text: input.trim() || 'Screenshot attached' },
-            { type: 'image' as const, imageUrl: attachmentUrl, alt: 'Attached screenshot' },
+            { type: 'text', text: input.trim() || 'Screenshot attached' },
+            { type: 'image', imageUrl: attachmentUrl, alt: 'Attached screenshot' },
           ],
-        } as any,
+        } as UIMessage,
       ]);
     }
 
@@ -227,11 +249,7 @@ export default function Chatbot() {
           <ChatMessage
             key={message.id}
             role={message.role as 'user' | 'assistant'}
-            parts={message.parts.map((part) =>
-              part.type === 'text'
-                ? { type: 'text' as const, text: part.text }
-                : { type: 'image' as const, imageUrl: (part as any).imageUrl ?? (part as any).image_url ?? '' }
-            )}
+            parts={message.parts.map(convertToMessagePart)}
             avatarSrc={message.role === 'user' ? '/useravatar.jpg' : '/botavatar.jpg'}
           />
         ))}
@@ -288,7 +306,14 @@ export default function Chatbot() {
         </div>
         {attachmentPreviewUrl && (
           <div className="mb-3 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#15191E] shadow-sm">
-            <img src={attachmentPreviewUrl} alt="Selected screenshot preview" className="w-full h-auto object-cover" />
+            <Image
+              src={attachmentPreviewUrl}
+              alt="Selected screenshot preview"
+              width={400}
+              height={300}
+              className="w-full h-auto object-cover"
+              unoptimized
+            />
             <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-[#11151A]">
               <span>Screenshot attached</span>
               <button
