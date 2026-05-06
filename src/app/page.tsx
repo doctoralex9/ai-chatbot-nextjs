@@ -116,7 +116,8 @@ export default function Chatbot() {
   }, [messages, status]);
 
   const uploadAttachment = async (file: File) => {
-    const safeFileName = `screenshots/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+    const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const safeFileName = `screenshots/${Date.now()}.${ext}`;
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(safeFileName, file, { upsert: true });
@@ -134,7 +135,26 @@ export default function Chatbot() {
   const handleAttachmentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError('');
     const file = event.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
+
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!ALLOWED.includes(file.type.toLowerCase())) {
+      const isHeic = /heic|heif/i.test(file.type) || /\.heic$/i.test(file.name);
+      setUploadError(
+        isHeic
+          ? 'HEIC not supported. On iPhone: open Photos, tap Share, then "Save as JPEG" and retry.'
+          : `Unsupported format. Please use JPEG, PNG, GIF, or WebP.`
+      );
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError(`Image too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`);
+      event.target.value = '';
+      return;
+    }
+
     setAttachmentFile(file);
   };
 
@@ -224,7 +244,7 @@ export default function Chatbot() {
   const isDisabled  = isStreaming || isUploadingAttachment;
 
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden app-bg app-grid text-[var(--text-1)] antialiased">
+    <div className="relative flex flex-col h-dvh overflow-hidden app-bg app-grid text-[var(--text-1)] antialiased">
 
       {/* ── White ambient glows ──────────────────────── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -470,7 +490,8 @@ export default function Chatbot() {
       {/* ══════════════════════════════════════════════
           BOTTOM PANEL
           ══════════════════════════════════════════ */}
-      <div className="relative flex-none z-10 glass-dark">
+      <div className="relative flex-none z-10 glass-dark"
+           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="divider-glow" />
 
         {/* Quick action chips */}
@@ -535,7 +556,11 @@ export default function Chatbot() {
                style={{ border: '1px solid var(--border-3)', background: '#0d0d0d' }}>
             <Image src={attachmentPreviewUrl} alt="Screenshot preview"
                    width={400} height={300} unoptimized
-                   className="w-full max-h-36 object-cover" />
+                   className="w-full max-h-36 object-cover"
+                   onError={() => {
+                     setUploadError('Could not preview this image. It may be in an unsupported format.');
+                     setAttachmentFile(null);
+                   }} />
             <div className="flex items-center justify-between px-3 py-2 text-xs"
                  style={{ borderTop: '1px solid var(--border-2)' }}>
               <span className="font-semibold flex items-center gap-1"
@@ -621,7 +646,6 @@ export default function Chatbot() {
               disabled={isDisabled}
               placeholder="Ask about odds, upload a ticket, or describe a bet..."
               rows={1}
-              autoFocus
               className="w-full min-h-[44px] max-h-[160px] px-4 py-3 pr-3 rounded-xl resize-none overflow-y-auto
                          text-sm leading-relaxed input-field disabled:opacity-50"
             />
