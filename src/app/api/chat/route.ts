@@ -194,9 +194,52 @@ export async function POST(req: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 55000);
 
     try {
+      // Process messages: extract image URLs from text and add as image parts
+      const processedMessages: UIMessage[] = messages.map((msg: any) => {
+        // If message already has explicit parts (with images), return as-is
+        if (Array.isArray(msg.parts)) {
+          return msg as UIMessage;
+        }
+
+        // For text-only messages, check if they contain image URLs to extract
+        let textContent = msg.text || '';
+        const urlRegex = /https:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)/gi;
+        const imageUrls = textContent.match(urlRegex) || [];
+
+        if (imageUrls.length > 0) {
+          // Remove URLs from text for cleaner message
+          const cleanText = textContent
+            .replace(urlRegex, '')
+            .replace(/\n\nAttached screenshot:\s*/, '')
+            .trim();
+
+          // Build parts array with text and images
+          const parts: any[] = [];
+          if (cleanText) {
+            parts.push({ type: 'text' as const, text: cleanText });
+          }
+          imageUrls.forEach((url: string) => {
+            parts.push({
+              type: 'image' as const,
+              imageUrl: url,
+              alt: 'Attached screenshot'
+            });
+          });
+
+          return {
+            id: msg.id || `msg-${Date.now()}`,
+            role: msg.role as 'user' | 'assistant',
+            parts: parts.length > 0 ? parts : [{ type: 'text' as const, text: 'Empty message' }],
+          } as UIMessage;
+        }
+
+        // Return message as-is if no images found
+        return msg as UIMessage;
+      });
+
       const result = streamText({
         model: openai('gpt-4o-mini'), // Efficient model for fast tool use
-        messages: convertToModelMessages(messages),
+        messages: convertToModelMessages(processedMessages),
 
         system: `You are the "AI Betting Copilot" - a blunt, no-nonsense risk analyst focused on preventing betting losses. Your job is to warn users against bad bets, highlight risks, and promote responsible gambling. You NEVER encourage betting or give "tips" that promise wins.
 
@@ -241,8 +284,17 @@ Respond directly to questions about betting risks or responsible gambling. Disco
           const assistantMessage = messages.filter(m => m.role === 'assistant').pop();
 
           if (lastUserMessage && assistantMessage) {
-            const prompt = lastUserMessage.parts.map(p => p.type === 'text' ? p.text : '').join('');
-            const response = assistantMessage.parts.map(p => p.type === 'text' ? p.text : '').join('');
+            // Extract text from parts array, handling both text and image types
+            const extractText = (parts: any[]) => {
+              if (!Array.isArray(parts)) return '';
+              return parts
+                .filter((p: any) => p.type === 'text')
+                .map((p: any) => p.text || '')
+                .join('');
+            };
+
+            const prompt = extractText(lastUserMessage.parts);
+            const response = extractText(assistantMessage.parts);
 
             const { error } = await supabase.from('chat_history').insert({
               user_id: 'guest',
