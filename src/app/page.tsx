@@ -35,8 +35,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? 'chat_uploads';
-
 const QUICK_ACTIONS = [
   { label: 'Analyze My Bet',  message: 'I want to analyze a bet I am considering. Can you walk me through the risk, EV, and whether I should place it?' },
   { label: 'Risk Check',      message: 'What are the key risk factors I should check before placing any bet? Be brutally honest.' },
@@ -116,26 +114,12 @@ export default function Chatbot() {
   }, [messages, status]);
 
   const uploadAttachment = async (file: File) => {
-    const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const safeFileName = `screenshots/${Date.now()}.${ext}`;
-
-    // Read into memory first — iOS Safari loses File object access after
-    // async React state updates, causing "Load failed" on direct upload.
-    const buffer = await file.arrayBuffer();
-    const blob = new Blob([buffer], { type: file.type || 'image/jpeg' });
-
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(safeFileName, blob, { contentType: file.type || 'image/jpeg', upsert: true });
-
-    if (error) throw error;
-
-    const { data: publicUrlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(safeFileName);
-
-    if (!publicUrlData?.publicUrl) throw new Error('Failed to generate public URL');
-    return publicUrlData.publicUrl;
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/api/upload', { method: 'POST', body: form });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? 'Upload failed');
+    return json.url as string;
   };
 
   const handleAttachmentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
