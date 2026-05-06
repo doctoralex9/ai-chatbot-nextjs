@@ -49,7 +49,7 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg space-y-3">
           <div>
-            <label className="block text-sm font-semibold mb-1">Teams (e.g., "Real Madrid vs Barcelona")</label>
+            <label className="block text-sm font-semibold mb-1">Teams (e.g., &quot;Real Madrid vs Barcelona&quot;)</label>
             <input
               type="text"
               name="teams"

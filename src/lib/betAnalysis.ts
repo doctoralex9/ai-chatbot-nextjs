@@ -53,7 +53,6 @@ export function calculateEV(
   actualWinProbability: number = 50
 ): number {
   const actualProb = actualWinProbability / 100;
-  const impliedProb = 1 / decimalOdds;
 
   // EV = (Win Prob * Payout) - (Loss Prob * Stake)
   const winnings = actualProb * (stake * decimalOdds);
