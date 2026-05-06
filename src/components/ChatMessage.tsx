@@ -37,10 +37,13 @@ export default function ChatMessage({ role, parts, avatarSrc }: ChatMessageProps
               </div>
             ) : (
               <div key={index} className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#101318]">
-                <img
+                <Image
                   src={part.imageUrl}
                   alt={part.alt ?? 'Attachment'}
+                  width={720}
+                  height={480}
                   className="w-full h-auto object-cover"
+                  unoptimized
                 />
               </div>
             )
