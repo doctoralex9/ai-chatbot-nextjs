@@ -118,9 +118,15 @@ export default function Chatbot() {
   const uploadAttachment = async (file: File) => {
     const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
     const safeFileName = `screenshots/${Date.now()}.${ext}`;
+
+    // Read into memory first — iOS Safari loses File object access after
+    // async React state updates, causing "Load failed" on direct upload.
+    const buffer = await file.arrayBuffer();
+    const blob = new Blob([buffer], { type: file.type || 'image/jpeg' });
+
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .upload(safeFileName, file, { upsert: true });
+      .upload(safeFileName, blob, { contentType: file.type || 'image/jpeg', upsert: true });
 
     if (error) throw error;
 
@@ -164,12 +170,16 @@ export default function Chatbot() {
     e.preventDefault();
     if ((input.trim().length === 0 && !attachmentFile) || status === 'streaming') return;
 
+    // Capture values before state changes — iOS Safari can lose File refs after re-renders
+    const currentInput = input.trim();
+    const currentFile = attachmentFile;
+
     let attachmentUrl = '';
 
-    if (attachmentFile) {
+    if (currentFile) {
       setIsUploadingAttachment(true);
       try {
-        attachmentUrl = await uploadAttachment(attachmentFile);
+        attachmentUrl = await uploadAttachment(currentFile);
       } catch (error) {
         console.error('Attachment upload failed:', error);
         const message = error instanceof Error ? error.message : 'Unknown upload failure';
@@ -187,7 +197,7 @@ export default function Chatbot() {
           id: `user-attachment-${Date.now()}`,
           role: 'user',
           parts: [
-            { type: 'text',  text: input.trim() || 'Screenshot attached' },
+            { type: 'text',  text: currentInput || 'Screenshot attached' },
             { type: 'image', imageUrl: attachmentUrl, alt: 'Attached screenshot' },
           ],
         } as UIMessage,
@@ -195,7 +205,7 @@ export default function Chatbot() {
     }
 
     sendMessage({
-      text: input.trim() + (attachmentUrl ? `\n\nAttached screenshot: ${attachmentUrl}` : ''),
+      text: currentInput + (attachmentUrl ? `\n\nAttached screenshot: ${attachmentUrl}` : ''),
     });
 
     setInput('');
