@@ -20,9 +20,9 @@ function inlineFormat(text: string): ReactNode {
     <>
       {segments.map((seg, i) => {
         if (/^\*\*[^*]+\*\*$/.test(seg))
-          return <strong key={i} className="font-bold" style={{ color: '#EDF2FF' }}>{seg.slice(2, -2)}</strong>;
+          return <strong key={i} className="font-bold" style={{ color: '#ffffff' }}>{seg.slice(2, -2)}</strong>;
         if (/^\*[^*]+\*$/.test(seg))
-          return <em key={i} className="italic text-blue-200">{seg.slice(1, -1)}</em>;
+          return <em key={i} className="italic" style={{ color: 'rgba(255,255,255,0.75)' }}>{seg.slice(1, -1)}</em>;
         if (/^`[^`]+`$/.test(seg))
           return <code key={i} className="code-inline">{seg.slice(1, -1)}</code>;
         return <span key={i}>{seg}</span>;
@@ -41,71 +41,57 @@ function renderMarkdown(text: string): ReactNode {
     const line = lines[i];
     const key  = `l${i}`;
 
-    // H2
     if (line.startsWith('## ')) {
       nodes.push(
-        <h3 key={key} className="font-bold text-sm mt-3 mb-1" style={{ color: '#93C5FD' }}>
+        <h3 key={key} className="font-bold text-sm mt-3 mb-1"
+            style={{ color: '#ffffff' }}>
           {line.slice(3)}
         </h3>
       );
-    }
-    // H3
-    else if (line.startsWith('### ')) {
+    } else if (line.startsWith('### ')) {
       nodes.push(
         <h4 key={key} className="font-semibold text-xs mt-2 mb-0.5 uppercase tracking-wider"
-            style={{ color: '#67E8F9' }}>
+            style={{ color: 'rgba(255,255,255,0.55)' }}>
           {line.slice(4)}
         </h4>
       );
-    }
-    // Horizontal rule
-    else if (line === '---' || line === '***') {
-      nodes.push(
-        <hr key={key} className="divider-glow border-0 my-2" />
-      );
-    }
-    // Fenced code block
-    else if (line.startsWith('```')) {
+    } else if (line === '---' || line === '***') {
+      nodes.push(<hr key={key} className="divider-glow border-0 my-2" />);
+    } else if (line.startsWith('```')) {
       const codeLines: string[] = [];
       let j = i + 1;
       while (j < lines.length && !lines[j].startsWith('```')) {
         codeLines.push(lines[j]);
         j++;
       }
-      i = j; // skip to closing fence; loop i++ moves past it
+      i = j;
       nodes.push(
         <pre key={key} className="code-pre my-2 whitespace-pre-wrap">
           {codeLines.join('\n')}
         </pre>
       );
-    }
-    // Bullet list item
-    else if (line.startsWith('- ') || line.startsWith('• ')) {
+    } else if (line.startsWith('- ') || line.startsWith('• ')) {
       nodes.push(
         <div key={key} className="flex items-start gap-2 my-0.5">
-          <span className="text-xs mt-0.5 flex-shrink-0" style={{ color: '#60A5FA' }}>▸</span>
+          <span className="text-xs mt-0.5 flex-shrink-0"
+                style={{ color: 'rgba(255,255,255,0.35)' }}>▸</span>
           <span className="text-sm leading-relaxed">{inlineFormat(line.slice(2))}</span>
         </div>
       );
-    }
-    // Numbered list item
-    else if (/^\d+\.\s/.test(line)) {
+    } else if (/^\d+\.\s/.test(line)) {
       const m = line.match(/^(\d+)\.\s(.*)/);
       if (m) {
         nodes.push(
           <div key={key} className="flex items-start gap-2 my-0.5">
-            <span className="font-mono text-xs mt-0.5 flex-shrink-0" style={{ color: '#60A5FA' }}>{m[1]}.</span>
+            <span className="font-mono text-xs mt-0.5 flex-shrink-0"
+                  style={{ color: 'rgba(255,255,255,0.35)' }}>{m[1]}.</span>
             <span className="text-sm leading-relaxed">{inlineFormat(m[2])}</span>
           </div>
         );
       }
-    }
-    // Empty line → small gap
-    else if (line.trim() === '') {
+    } else if (line.trim() === '') {
       if (i > 0 && i < lines.length - 1) nodes.push(<div key={key} className="h-1" />);
-    }
-    // Regular paragraph
-    else {
+    } else {
       nodes.push(
         <p key={key} className="text-sm leading-relaxed">{inlineFormat(line)}</p>
       );
@@ -126,7 +112,7 @@ export default function ChatMessage({ role, parts, avatarSrc }: ChatMessageProps
 
       {/* Avatar */}
       <div className={`flex-shrink-0 w-7 h-7 rounded-full overflow-hidden
-        ${isUser ? 'avatar-ring-blue' : 'avatar-ring-cyan'}`}>
+        ${isUser ? 'avatar-ring-user' : 'avatar-ring'}`}>
         <Image
           src={avatarSrc}
           alt={isUser ? 'You' : 'AI'}
@@ -141,16 +127,18 @@ export default function ChatMessage({ role, parts, avatarSrc }: ChatMessageProps
         className={`max-w-[80%] sm:max-w-[75%] rounded-2xl overflow-hidden
           ${isUser ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
         style={isUser ? {
-          background: 'linear-gradient(145deg, #2563EB, #1D4ED8)',
-          border:     '1px solid rgba(96,165,250,0.25)',
-          boxShadow:  '0 4px 18px rgba(37,99,235,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+          background: '#ffffff',
+          boxShadow: '0 4px 20px rgba(255,255,255,0.12), 0 1px 4px rgba(0,0,0,0.5)',
         } : {
-          background: 'linear-gradient(145deg, #0F1928, #0A1520)',
-          border:     '1px solid rgba(6,182,212,0.18)',
-          boxShadow:  '0 4px 20px rgba(0,0,0,0.35)',
+          background: '#0a0a0a',
+          border:    '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
         }}
       >
-        <div className={`px-4 py-3 space-y-1 ${isUser ? 'text-white' : 'text-[var(--text-1)]'}`}>
+        <div className={`px-4 py-3 space-y-1 ${isUser ? '' : 'text-[var(--text-1)]'}`}
+             style={isUser ? { color: '#000000' } : {}}>
           {parts.map((part, idx) =>
             part.type === 'text' ? (
               <div key={idx} className="leading-relaxed">

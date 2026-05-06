@@ -1,45 +1,53 @@
 export default function Loader() {
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen gap-5"
-      style={{ background: '#030711' }}
+      className="flex flex-col items-center justify-center min-h-screen gap-6"
+      style={{ background: '#000000' }}
     >
-      {/* Animated rings */}
+      {/* Concentric orbit rings */}
       <div className="relative w-16 h-16">
         <span
           className="absolute inset-0 rounded-full"
           style={{
-            border: '2px solid rgba(59,130,246,0.15)',
-            animation: 'spin 2s linear infinite',
+            border: '1px solid rgba(255,255,255,0.06)',
           }}
         />
         <span
-          className="absolute inset-[4px] rounded-full"
+          className="absolute inset-0 rounded-full"
           style={{
-            border: '2px solid transparent',
-            borderTopColor: '#3B82F6',
-            borderRightColor: 'rgba(59,130,246,0.3)',
-            animation: 'spin 1.2s linear infinite',
+            border: '1.5px solid transparent',
+            borderTopColor: 'rgba(255,255,255,0.8)',
+            borderRightColor: 'rgba(255,255,255,0.2)',
+            animation: 'spin 1.6s linear infinite',
           }}
         />
         <span
-          className="absolute inset-[9px] rounded-full"
+          className="absolute inset-[5px] rounded-full"
           style={{
-            border: '2px solid transparent',
-            borderTopColor: '#22D3EE',
-            animation: 'spin 0.8s linear infinite reverse',
+            border: '1.5px solid transparent',
+            borderTopColor: 'rgba(255,255,255,0.5)',
+            borderLeftColor: 'rgba(255,255,255,0.12)',
+            animation: 'spin 1.1s linear infinite reverse',
+          }}
+        />
+        <span
+          className="absolute inset-[11px] rounded-full"
+          style={{
+            border: '1.5px solid transparent',
+            borderTopColor: 'rgba(255,255,255,0.3)',
+            animation: 'spin 0.75s linear infinite',
           }}
         />
         {/* Centre dot */}
         <span
-          className="absolute inset-[14px] rounded-full pulse-glow"
-          style={{ background: 'radial-gradient(circle, #3B82F6, #2563EB)' }}
+          className="absolute inset-[18px] rounded-full white-pulse"
+          style={{ background: '#ffffff' }}
         />
       </div>
 
       <div className="text-center">
-        <p className="text-sm font-semibold text-gradient">Wager Wizard Pro</p>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Loading your session…</p>
+        <p className="text-sm font-semibold text-gradient tracking-wide">Wager Wizard Pro</p>
+        <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-4)' }}>Loading your session…</p>
       </div>
 
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>

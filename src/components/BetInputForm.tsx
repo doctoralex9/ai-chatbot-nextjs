@@ -54,9 +54,21 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
                    transition-all duration-200 active:scale-95 disabled:opacity-50"
         style={{
-          background:  showForm ? 'rgba(249,115,22,0.12)' : 'rgba(249,115,22,0.09)',
-          border:      '1px solid rgba(249,115,22,0.28)',
-          color:       '#FB923C',
+          background:  showForm ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
+          border:      '1px solid rgba(255,255,255,0.14)',
+          color:       'rgba(255,255,255,0.8)',
+        }}
+        onMouseEnter={e => {
+          if (!isLoading) {
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)';
+            (e.currentTarget as HTMLButtonElement).style.color = '#ffffff';
+          }
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLButtonElement).style.background = showForm ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)';
+          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.14)';
+          (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.8)';
         }}
       >
         <svg
@@ -73,15 +85,20 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
         <form
           onSubmit={handleSubmit}
           className="mt-3 p-4 rounded-xl space-y-3 message-appear"
-          style={{ background: '#0C1722', border: '1px solid rgba(59,130,246,0.15)' }}
+          style={{
+            background: '#0d0d0d',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
         >
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em]"
+             style={{ color: 'rgba(255,255,255,0.25)' }}>
             Bet Details
           </p>
 
           {/* Matchup */}
           <div>
-            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#93C5FD' }}>
+            <label className="block text-xs font-semibold mb-1.5"
+                   style={{ color: 'rgba(255,255,255,0.6)' }}>
               Matchup
             </label>
             <input
@@ -92,13 +109,14 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
               placeholder="Real Madrid vs Barcelona"
               className={`w-full px-3 py-2.5 rounded-lg text-sm input-field ${errors.teams ? 'border-red-500/50' : ''}`}
             />
-            {errors.teams && <p className="mt-1 text-[10px] text-red-400">{errors.teams}</p>}
+            {errors.teams && <p className="mt-1 text-[10px]" style={{ color: 'var(--red)' }}>{errors.teams}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             {/* Odds */}
             <div>
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#67E8F9' }}>
+              <label className="block text-xs font-semibold mb-1.5"
+                     style={{ color: 'rgba(255,255,255,0.55)' }}>
                 Odds
               </label>
               <input
@@ -109,12 +127,13 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
                 placeholder="2.50 or -110"
                 className={`w-full px-3 py-2.5 rounded-lg text-sm input-field ${errors.odds ? 'border-red-500/50' : ''}`}
               />
-              {errors.odds && <p className="mt-1 text-[10px] text-red-400">{errors.odds}</p>}
+              {errors.odds && <p className="mt-1 text-[10px]" style={{ color: 'var(--red)' }}>{errors.odds}</p>}
             </div>
 
             {/* Stake */}
             <div>
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6EE7B7' }}>
+              <label className="block text-xs font-semibold mb-1.5"
+                     style={{ color: 'rgba(255,255,255,0.55)' }}>
                 Stake (€)
               </label>
               <input
@@ -127,14 +146,15 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
                 step="0.01"
                 className={`w-full px-3 py-2.5 rounded-lg text-sm input-field ${errors.stake ? 'border-red-500/50' : ''}`}
               />
-              {errors.stake && <p className="mt-1 text-[10px] text-red-400">{errors.stake}</p>}
+              {errors.stake && <p className="mt-1 text-[10px]" style={{ color: 'var(--red)' }}>{errors.stake}</p>}
             </div>
 
             {/* Bankroll */}
             <div className="col-span-2">
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#C4B5FD' }}>
+              <label className="block text-xs font-semibold mb-1.5"
+                     style={{ color: 'rgba(255,255,255,0.55)' }}>
                 Bankroll (€){' '}
-                <span className="font-normal" style={{ color: 'var(--text-3)' }}>— Optional</span>
+                <span className="font-normal" style={{ color: 'rgba(255,255,255,0.22)' }}>— Optional</span>
               </label>
               <input
                 type="number"
@@ -154,12 +174,7 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
             type="submit"
             disabled={isLoading}
             className="w-full py-2.5 px-4 rounded-xl text-sm font-bold transition-all duration-200
-                       active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            style={{
-              background:  'linear-gradient(135deg, #059669, #047857)',
-              color:       '#fff',
-              boxShadow:   '0 4px 14px rgba(5,150,105,0.35)',
-            }}
+                       active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed btn-primary"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
