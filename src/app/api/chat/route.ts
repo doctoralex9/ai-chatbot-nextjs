@@ -13,7 +13,7 @@ type MessageWithText = {
 
 type MessagePart =
   | { type: 'text'; text?: string }
-  | { type: 'image'; imageUrl: string; alt: string };
+  | { type: 'image'; image: string };
 
 const isTextPart = (part: unknown): part is { type: 'text'; text?: string } =>
   typeof part === 'object' && part !== null && (part as { type?: string }).type === 'text';
@@ -208,49 +208,54 @@ export async function POST(req: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 55000);
 
     try {
-      // Process messages: extract image URLs from text and add as image parts
+      // Process messages: scan every text part for embedded Supabase image URLs
+      // and promote them to proper image parts so convertToModelMessages passes
+      // them to the model as actual vision inputs (not plain text).
+      const urlRegex = /https:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)/gi;
+
       const processedMessages: UIMessage[] = messages.map((msg) => {
-        const message = msg as MessageWithText;
+        const rawParts = Array.isArray((msg as MessageWithText).parts)
+          ? (msg as MessageWithText).parts as Array<Record<string, unknown>>
+          : null;
 
-        // If message already has explicit parts (with images), return as-is
-        if (Array.isArray(message.parts)) {
-          return msg as UIMessage;
-        }
+        if (!rawParts) return msg;
 
-        // For text-only messages, check if they contain image URLs to extract
-        const textContent = message.text ?? '';
-        const urlRegex = /https:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)/gi;
-        const imageUrls = textContent.match(urlRegex) || [];
+        let modified = false;
+        const newParts: MessagePart[] = [];
 
-        if (imageUrls.length > 0) {
-          // Remove URLs from text for cleaner message
-          const cleanText = textContent
-            .replace(urlRegex, '')
-            .replace(/\n\nAttached screenshot:\s*/, '')
-            .trim();
-
-          // Build parts array with text and images
-          const parts: MessagePart[] = [];
-          if (cleanText) {
-            parts.push({ type: 'text' as const, text: cleanText });
+        for (const part of rawParts) {
+          if (part.type === 'text' && typeof part.text === 'string') {
+            const imageUrls = part.text.match(urlRegex) || [];
+            if (imageUrls.length > 0) {
+              modified = true;
+              const cleanText = part.text
+                .replace(urlRegex, '')
+                .replace(/\n\nAttached (screenshot|betting slip)[:\s]*/gi, '')
+                .trim();
+              if (cleanText) newParts.push({ type: 'text', text: cleanText });
+              imageUrls.forEach((url: string) =>
+                newParts.push({ type: 'image', image: url })
+              );
+            } else {
+              newParts.push({ type: 'text', text: part.text });
+            }
+          } else if (part.type === 'image') {
+            // Normalize existing image parts (legacy imageUrl or current image field)
+            const url =
+              (typeof part.image === 'string' ? part.image : '') ||
+              (typeof part.imageUrl === 'string' ? part.imageUrl : '');
+            if (url) { modified = true; newParts.push({ type: 'image', image: url }); }
           }
-          imageUrls.forEach((url: string) => {
-            parts.push({
-              type: 'image' as const,
-              imageUrl: url,
-              alt: 'Attached screenshot'
-            });
-          });
-
-          return {
-            id: msg.id || `msg-${Date.now()}`,
-            role: msg.role as 'user' | 'assistant',
-            parts: parts.length > 0 ? parts : [{ type: 'text' as const, text: 'Empty message' }],
-          } as UIMessage;
+          // Other part types (tool-invocation, step-boundary) are intentionally dropped
         }
 
-        // Return message as-is if no images found
-        return msg as UIMessage;
+        if (!modified) return msg;
+
+        return {
+          id: msg.id,
+          role: msg.role,
+          parts: newParts,
+        } as unknown as UIMessage;
       });
 
       const result = streamText({
@@ -270,6 +275,9 @@ export async function POST(req: Request) {
 - Keep responses concise (2-3 sentences max for analysis)
 - Use straightforward, serious tone - like a stern advisor
 - Focus on facts and risks, not predictions or "value"
+
+**IMAGE ANALYSIS:**
+When the user uploads a betting slip or coupon screenshot, you CAN see the image. Extract all visible information (teams, odds, selections, total odds, stake, potential payout) and immediately run full risk analysis — risk score, EV direction, recommendation. Do not say you cannot access images.
 
 **TOOL USAGE:**
 - For specific bet analysis: Use \`analyzeBetRisk\` when user provides odds, stake, and teams. This calculates EV, risk score, and gives direct recommendations.
