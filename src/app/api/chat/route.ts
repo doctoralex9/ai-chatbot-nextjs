@@ -197,9 +197,34 @@ export async function POST(req: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 55000);
 
     try {
+      // convertToModelMessages puts FileUIPart.url (a string) into FilePart.data.
+      // @ai-sdk/openai only handles URL *objects* for remote URLs — string URLs get
+      // incorrectly treated as raw base64 and double-encoded (SDK bug in v2.0.32).
+      // Fix: walk the model messages and convert any HTTPS data string to URL object.
+      const rawModelMessages = convertToModelMessages(messages);
+      const modelMessages = rawModelMessages.map(msg => {
+        if (msg.role !== 'user' || !Array.isArray(msg.content)) return msg;
+        return {
+          ...msg,
+          content: msg.content.map(part => {
+            const p = part as unknown as Record<string, unknown>;
+            if (p['type'] !== 'file' || typeof p['data'] !== 'string') return part;
+            const data = p['data'] as string;
+            if (data.startsWith('https://') || data.startsWith('http://')) {
+              return { ...p, data: new URL(data) };
+            }
+            if (data.startsWith('data:')) {
+              // Extract raw base64 portion after the comma
+              return { ...p, data: data.split(',')[1] ?? '' };
+            }
+            return part;
+          }),
+        };
+      }) as typeof rawModelMessages;
+
       const result = streamText({
         model: openai('gpt-4o-mini'),
-        messages: convertToModelMessages(messages),
+        messages: modelMessages,
 
         system: `You are the "AI Betting Copilot" - a blunt, no-nonsense risk analyst focused on preventing betting losses. Your job is to warn users against bad bets, highlight risks, and promote responsible gambling. You NEVER encourage betting or give "tips" that promise wins.
 
