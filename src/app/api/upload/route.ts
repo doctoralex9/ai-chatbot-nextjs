@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Prefer service role key server-side — bypasses RLS so storage uploads work
+// without needing to configure storage policies.
+// Falls back to anon key if service role key is not set.
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? 'chat_uploads';
 
@@ -22,7 +25,10 @@ export async function POST(req: NextRequest) {
       .from(STORAGE_BUCKET)
       .upload(safeFileName, blob, { contentType: file.type || 'image/jpeg', upsert: true });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[upload] Supabase storage error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     const { data: publicUrlData } = supabase.storage
       .from(STORAGE_BUCKET)
