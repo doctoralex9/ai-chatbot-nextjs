@@ -362,8 +362,8 @@ export default function Chatbot() {
       {/* ══════════════════════════════════════════════
           CHAT AREA
       ══════════════════════════════════════════════ */}
-      <main className="relative flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 pt-6 pb-2 space-y-5">
+      <main className="relative flex-1 overflow-y-auto flex flex-col items-center">
+        <div className="w-full max-w-2xl px-4 pt-6 pb-2 space-y-5">
 
           {/* Empty state */}
           {messages.length === 0 && (
@@ -395,7 +395,7 @@ export default function Chatbot() {
                 Not a tipster. An AI risk copilot that tells you when to step back — before you lose.
               </p>
 
-              <div className="grid grid-cols-2 gap-3 max-w-xs w-full mb-7">
+              <div className="grid grid-cols-2 gap-3 w-full max-w-xs sm:max-w-sm mb-7">
                 {[
                   { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, title: 'Risk Analysis', desc: 'EV & probability', delay: '0.05s' },
                   { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>, title: 'Bankroll Mode', desc: 'Max bet sizing', delay: '0.1s' },
@@ -412,17 +412,10 @@ export default function Chatbot() {
               </div>
 
               {/* Drag-to-upload hint */}
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full mb-3"
-                   style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                     style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  Drag & drop a betting slip anywhere to analyze
-                </p>
-              </div>
+              <p className="text-[11px] mb-3 px-4 py-2 rounded-full"
+                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }}>
+                ↑ drag &amp; drop a betting slip anywhere to instantly analyze
+              </p>
 
               <p className="text-xs" style={{ color: 'var(--text-4)' }}>
                 Use the quick actions below or describe a bet
@@ -497,7 +490,8 @@ export default function Chatbot() {
            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="divider-glow" />
 
-        <div className="max-w-2xl mx-auto">
+        <div className="flex flex-col items-center w-full">
+        <div className="w-full max-w-2xl">
           {/* Quick action chips */}
           <div className="px-4 pt-3 pb-0">
             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
@@ -641,6 +635,7 @@ export default function Chatbot() {
               )}
             </button>
           </form>
+        </div>
         </div>
       </div>
     </div>
