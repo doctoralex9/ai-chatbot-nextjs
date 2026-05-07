@@ -1,6 +1,7 @@
 'use client';
 
 import { useChat, UIMessage } from '@ai-sdk/react';
+import { FileUIPart } from 'ai';
 import { createClient } from '@supabase/supabase-js';
 import { useRef, useEffect, useState, useLayoutEffect } from 'react';
 import Image from 'next/image';
@@ -20,6 +21,10 @@ const convertToMessagePart = (part: unknown): MessagePart | null => {
     const p = part as Record<string, unknown>;
     if (p.type === 'text' && typeof p.text === 'string') {
       return { type: 'text', text: p.text };
+    }
+    if (p.type === 'file') {
+      const url = typeof p.url === 'string' ? p.url : '';
+      if (url) return { type: 'image', imageUrl: url, alt: typeof p.filename === 'string' ? p.filename : 'Image' };
     }
     if (p.type === 'image') {
       const url =
@@ -186,7 +191,8 @@ export default function Chatbot() {
     try {
       const url  = await uploadAttachment(file);
       const text = input.trim() || 'Analyze this betting slip for me';
-      sendMessage({ text: `${text}\n\nAttached screenshot: ${url}` });
+      const filePart: FileUIPart = { type: 'file', mediaType: file.type || 'image/jpeg', filename: file.name, url };
+      sendMessage({ text, files: [filePart] });
       setInput('');
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     } catch (error) {
@@ -217,8 +223,12 @@ export default function Chatbot() {
       setIsUploadingAttachment(false);
     }
 
+    const fileParts: FileUIPart[] = attachmentUrl && currentFile
+      ? [{ type: 'file', mediaType: currentFile.type || 'image/jpeg', filename: currentFile.name, url: attachmentUrl }]
+      : [];
     sendMessage({
-      text: currentInput + (attachmentUrl ? `\n\nAttached screenshot: ${attachmentUrl}` : ''),
+      text: currentInput,
+      ...(fileParts.length > 0 && { files: fileParts }),
     });
 
     setInput('');

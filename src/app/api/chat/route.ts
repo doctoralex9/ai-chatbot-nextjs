@@ -4,17 +4,6 @@ import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { analyzeBet } from '@/lib/betAnalysis';
 
-type MessageWithText = {
-  id?: string;
-  role?: 'user' | 'assistant';
-  text?: string;
-  parts?: unknown;
-};
-
-type MessagePart =
-  | { type: 'text'; text?: string }
-  | { type: 'image'; image: string };
-
 const isTextPart = (part: unknown): part is { type: 'text'; text?: string } =>
   typeof part === 'object' && part !== null && (part as { type?: string }).type === 'text';
 
@@ -208,59 +197,9 @@ export async function POST(req: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 55000);
 
     try {
-      // Process messages: scan every text part for embedded Supabase image URLs
-      // and promote them to proper image parts so convertToModelMessages passes
-      // them to the model as actual vision inputs (not plain text).
-      const urlRegex = /https:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)/gi;
-
-      const processedMessages: UIMessage[] = messages.map((msg) => {
-        const rawParts = Array.isArray((msg as MessageWithText).parts)
-          ? (msg as MessageWithText).parts as Array<Record<string, unknown>>
-          : null;
-
-        if (!rawParts) return msg;
-
-        let modified = false;
-        const newParts: MessagePart[] = [];
-
-        for (const part of rawParts) {
-          if (part.type === 'text' && typeof part.text === 'string') {
-            const imageUrls = part.text.match(urlRegex) || [];
-            if (imageUrls.length > 0) {
-              modified = true;
-              const cleanText = part.text
-                .replace(urlRegex, '')
-                .replace(/\n\nAttached (screenshot|betting slip)[:\s]*/gi, '')
-                .trim();
-              if (cleanText) newParts.push({ type: 'text', text: cleanText });
-              imageUrls.forEach((url: string) =>
-                newParts.push({ type: 'image', image: url })
-              );
-            } else {
-              newParts.push({ type: 'text', text: part.text });
-            }
-          } else if (part.type === 'image') {
-            // Normalize existing image parts (legacy imageUrl or current image field)
-            const url =
-              (typeof part.image === 'string' ? part.image : '') ||
-              (typeof part.imageUrl === 'string' ? part.imageUrl : '');
-            if (url) { modified = true; newParts.push({ type: 'image', image: url }); }
-          }
-          // Other part types (tool-invocation, step-boundary) are intentionally dropped
-        }
-
-        if (!modified) return msg;
-
-        return {
-          id: msg.id,
-          role: msg.role,
-          parts: newParts,
-        } as unknown as UIMessage;
-      });
-
       const result = streamText({
-        model: openai('gpt-4o-mini'), // Efficient model for fast tool use
-        messages: convertToModelMessages(processedMessages),
+        model: openai('gpt-4o-mini'),
+        messages: convertToModelMessages(messages),
 
         system: `You are the "AI Betting Copilot" - a blunt, no-nonsense risk analyst focused on preventing betting losses. Your job is to warn users against bad bets, highlight risks, and promote responsible gambling. You NEVER encourage betting or give "tips" that promise wins.
 
