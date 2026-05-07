@@ -114,12 +114,19 @@ export default function Chatbot() {
   }, [messages, status]);
 
   const uploadAttachment = async (file: File) => {
+    // Read into ArrayBuffer before upload — iOS Safari drops File object
+    // access after async React re-renders, producing "Load failed" / "fetch failed".
+    const buffer = await file.arrayBuffer();
+    const blob = new Blob([buffer], { type: file.type || 'image/jpeg' });
+
     const form = new FormData();
-    form.append('file', file);
+    form.append('file', blob, file.name);
+
     const res = await fetch('/api/upload', { method: 'POST', body: form });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? 'Upload failed');
-    return json.url as string;
+    const json = await res.json().catch(() => ({})) as { url?: string; error?: string };
+    if (!res.ok) throw new Error(json.error ?? `Upload failed (${res.status})`);
+    if (!json.url) throw new Error('Server returned no URL');
+    return json.url;
   };
 
   const handleAttachmentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
