@@ -11,6 +11,11 @@ const supabase = createClient(
 const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? 'chat_uploads';
 
 export async function POST(req: NextRequest) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.error('[upload] Missing Supabase env vars');
+    return NextResponse.json({ error: 'Server misconfigured: Supabase env vars not set' }, { status: 500 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
