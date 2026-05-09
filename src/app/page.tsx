@@ -5,7 +5,6 @@ import { FileUIPart } from 'ai';
 import { createClient } from '@supabase/supabase-js';
 import { useRef, useEffect, useState, useLayoutEffect } from 'react';
 import Image from 'next/image';
-import "./globals.css";
 import Loading from './Loader';
 import ChatMessage from '@/components/ChatMessage';
 import BetInputForm from '@/components/BetInputForm';

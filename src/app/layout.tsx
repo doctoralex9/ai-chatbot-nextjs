@@ -35,11 +35,11 @@ const geistMono = Geist_Mono({
  */
 export const metadata: Metadata = {
   title: {
-    default: "AI Chatbot - Wager Wizard Pro",
+    default: "Wager Wizard Pro — AI Risk Copilot",
     template: "%s | Wager Wizard Pro",
   },
   description:
-    "AI-powered chatbot for intelligent betting analysis and financial insights. Get real-time odds, risk assessments, and data-driven predictions.",
+    "Your AI-powered betting risk copilot. Assess bets, protect your bankroll, and get honest EV analysis — before you place a single stake.",
   keywords: [
     "AI chatbot",
     "betting analysis",
@@ -65,16 +65,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://wagerwizard.com",
-    title: "AI Chatbot - Wager Wizard Pro",
+    title: "Wager Wizard Pro — AI Risk Copilot",
     description:
-      "AI-powered chatbot for intelligent betting analysis and financial insights.",
+      "Your AI-powered betting risk copilot. Assess bets, protect your bankroll, and get honest EV analysis.",
     siteName: "Wager Wizard Pro",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Chatbot - Wager Wizard Pro",
+    title: "Wager Wizard Pro — AI Risk Copilot",
     description:
-      "AI-powered chatbot for intelligent betting analysis and financial insights.",
+      "Your AI-powered betting risk copilot. Assess bets, protect your bankroll, and get honest EV analysis.",
   },
 };
 
@@ -108,12 +108,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head>
-        <link
-          href="https://fonts.googleapis.com/icon?family=Material+Icons"
-          rel="stylesheet"
-        />
-      </head>
+
       <body
         className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ fontFamily: 'var(--font-inter), var(--font-geist-sans), system-ui' }}

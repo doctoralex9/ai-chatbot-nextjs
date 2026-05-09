@@ -225,6 +225,7 @@ export async function POST(req: Request) {
       const result = streamText({
         model: openai('gpt-4o-mini'),
         messages: modelMessages,
+        abortSignal: controller.signal,
 
         system: `You are the "AI Betting Copilot" - a blunt, no-nonsense risk analyst focused on preventing betting losses. Your job is to warn users against bad bets, highlight risks, and promote responsible gambling. You NEVER encourage betting or give "tips" that promise wins.
 
@@ -260,13 +261,12 @@ When the user uploads a betting slip or coupon screenshot, you CAN see the image
 Respond directly to questions about betting risks or responsible gambling. Discourage impulsive bets. If user says something like "I want to bet on X", ask for odds and stake to use the analysis tool.`,
 
         tools: { getUpcomingFootballOdds, analyzeBetRisk },
-        temperature: 0.7, // Higher temperature for more natural, fluid responses
+        temperature: 0.7,
       });
-
-      clearTimeout(timeoutId);
 
       return result.toUIMessageStreamResponse({
         onFinish: async ({ messages }) => {
+          clearTimeout(timeoutId);
           // ... Persistence logic remains the same (secure and good)
           const lastUserMessage = messages.filter(m => m.role === 'user').pop();
           const assistantMessage = messages.filter(m => m.role === 'assistant').pop();
