@@ -35,11 +35,11 @@ const geistMono = Geist_Mono({
  */
 export const metadata: Metadata = {
   title: {
-    default: "Wager Wizard Pro — AI Risk Copilot",
-    template: "%s | Wager Wizard Pro",
+    default: "RiskRadar AI — Betting Risk Analysis",
+    template: "%s | RiskRadar AI",
   },
   description:
-    "Your AI-powered betting risk copilot. Assess bets, protect your bankroll, and get honest EV analysis — before you place a single stake.",
+    "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis — before you place a single stake.",
   keywords: [
     "AI chatbot",
     "betting analysis",
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     "odds comparison",
     "risk assessment",
   ],
-  authors: [{ name: "Wager Wizard Team" }],
-  creator: "Wager Wizard Pro",
-  publisher: "Wager Wizard Pro",
+  authors: [{ name: "RiskRadar AI Team" }],
+  creator: "RiskRadar AI",
+  publisher: "RiskRadar AI",
   robots: {
     index: true,
     follow: true,
@@ -65,16 +65,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://wagerwizard.com",
-    title: "Wager Wizard Pro — AI Risk Copilot",
+    title: "RiskRadar AI — Betting Risk Analysis",
     description:
-      "Your AI-powered betting risk copilot. Assess bets, protect your bankroll, and get honest EV analysis.",
-    siteName: "Wager Wizard Pro",
+      "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis.",
+    siteName: "RiskRadar AI",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Wager Wizard Pro — AI Risk Copilot",
+    title: "RiskRadar AI — Betting Risk Analysis",
     description:
-      "Your AI-powered betting risk copilot. Assess bets, protect your bankroll, and get honest EV analysis.",
+      "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis.",
   },
 };
 

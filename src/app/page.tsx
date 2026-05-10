@@ -343,7 +343,7 @@ export default function Chatbot() {
           <div className="relative flex-shrink-0">
             <div className="orbit-ring" />
             <div className="relative z-10 w-9 h-9 rounded-full overflow-hidden avatar-ring">
-              <Image src="/botavatar.jpg" alt="Wager Wizard" width={36} height={36}
+              <Image src="/botavatar.jpg" alt="RiskRadar AI" width={36} height={36}
                      className="w-full h-full object-cover" />
             </div>
             <span className="absolute bottom-0 right-0 z-20 w-2.5 h-2.5 rounded-full border-2"
@@ -351,11 +351,11 @@ export default function Chatbot() {
           </div>
           <div className="min-w-0">
             <h1 className="font-bold text-base leading-tight text-gradient tracking-tight">
-              Wager Wizard Pro
+              RiskRadar AI
             </h1>
             <p className="text-[10px] font-semibold tracking-[0.18em] uppercase mt-0.5"
                style={{ color: 'var(--text-4)' }}>
-              AI Risk Copilot
+              AI Risk Radar
             </p>
           </div>
         </div>
@@ -405,14 +405,14 @@ export default function Chatbot() {
                   <div className="absolute inset-0 rounded-full blur-xl"
                        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.1), transparent)' }} />
                   <div className="relative w-20 h-20 rounded-full overflow-hidden avatar-ring-user">
-                    <Image src="/botavatar.jpg" alt="Wager Wizard" width={80} height={80}
+                    <Image src="/botavatar.jpg" alt="RiskRadar AI" width={80} height={80}
                            className="w-full h-full object-cover" />
                   </div>
                 </div>
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-extrabold text-gradient mb-2 tracking-tight">
-                Wager Wizard Pro
+                RiskRadar AI
               </h2>
               <p className="text-sm max-w-sm mb-8 leading-relaxed" style={{ color: 'var(--text-3)' }}>
                 Not a tipster. An AI risk copilot that tells you when to step back — before you lose.

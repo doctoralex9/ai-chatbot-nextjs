@@ -1,8 +1,8 @@
-# Wager Wizard Pro — CLAUDE.md
+# RiskRadar AI — CLAUDE.md
 
 ## What this project is
 
-A risk-first AI betting copilot. The product tells users when **not** to bet, helps them assess risk, and protects their bankroll. It is not a tipster and does not predict outcomes or suggest "winning" bets.
+A risk-first AI betting radar. The product tells users when **not** to bet, helps them assess risk, and protects their bankroll. It is not a tipster and does not predict outcomes or suggest "winning" bets.
 
 Core philosophy: honest, data-driven analysis — not marketing-driven recommendations.
 
@@ -30,6 +30,8 @@ src/
     api/
       chat/
         route.ts      — POST handler: streams AI responses, saves to Supabase
+      upload/
+        route.ts      — POST handler: uploads image to Supabase storage, returns public URL
   components/
     ChatMessage.tsx   — Renders user/assistant messages with inline markdown
     BetInputForm.tsx  — Collapsible bet analysis form (odds, stake, teams, bankroll)
@@ -75,9 +77,10 @@ Must be **public** so uploaded screenshot URLs are accessible to the AI.
 
 - All UI state lives in `page.tsx` — no global state management.
 - `useChat` from `@ai-sdk/react` drives the streaming message loop.
-- Messages with image attachments are pre-pushed to `messages` state before `sendMessage` is called (so the image preview appears immediately).
 - Markdown in AI responses is rendered by a hand-rolled parser in `ChatMessage.tsx` — no external markdown library.
 - The design system uses CSS custom properties defined in `:root` (`globals.css`). Prefer `var(--name)` over inline Tailwind color classes for brand colors.
+- **AI SDK v5** (`ai@5.x`, `@ai-sdk/react@2.x`): `maxSteps` does not exist. Use `stopWhen: stepCountIs(N)` imported from `'ai'`. Default is `stepCountIs(1)` — always set to 5 when tools are present, otherwise the model calls a tool and the stream ends with no text response.
+- Image uploads go via `/api/upload` → Supabase public storage → URL passed as `FileUIPart` to `sendMessage`. The `chat_uploads` bucket must remain **public**.
 
 ## What to avoid adding
 
