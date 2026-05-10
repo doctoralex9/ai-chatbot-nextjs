@@ -1,5 +1,5 @@
 ﻿import { openai } from '@ai-sdk/openai';
-import { streamText, UIMessage, convertToModelMessages, dynamicTool } from 'ai';
+import { streamText, UIMessage, convertToModelMessages, dynamicTool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { analyzeBet } from '@/lib/betAnalysis';
@@ -261,6 +261,7 @@ When the user uploads a betting slip or coupon screenshot, you CAN see the image
 Respond directly to questions about betting risks or responsible gambling. Discourage impulsive bets. If user says something like "I want to bet on X", ask for odds and stake to use the analysis tool.`,
 
         tools: { getUpcomingFootballOdds, analyzeBetRisk },
+        stopWhen: stepCountIs(5),
         temperature: 0.7,
       });
 
