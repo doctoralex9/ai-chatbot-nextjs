@@ -18,7 +18,7 @@ type MessagePart =
 const convertToMessagePart = (part: unknown): MessagePart | null => {
   if (part && typeof part === 'object' && 'type' in part) {
     const p = part as Record<string, unknown>;
-    if (p.type === 'text' && typeof p.text === 'string') {
+    if (p.type === 'text' && typeof p.text === 'string' && p.text.length > 0) {
       return { type: 'text', text: p.text };
     }
     if (p.type === 'file') {
@@ -26,9 +26,11 @@ const convertToMessagePart = (part: unknown): MessagePart | null => {
       if (url) return { type: 'image', imageUrl: url, alt: typeof p.filename === 'string' ? p.filename : 'Image' };
     }
     if (p.type === 'image') {
+      // AI SDK v5 uses p.image (string or URL object); older paths used p.imageUrl / p.image_url
+      const raw = p.image ?? p.imageUrl ?? p.image_url;
       const url =
-        typeof p.imageUrl === 'string' ? p.imageUrl :
-        typeof p.image_url === 'string' ? p.image_url : '';
+        typeof raw === 'string' ? raw :
+        raw instanceof URL ? raw.href : '';
       if (url) return { type: 'image', imageUrl: url, alt: typeof p.alt === 'string' ? p.alt : undefined };
     }
   }
@@ -266,10 +268,16 @@ export default function Chatbot() {
 
   const isStreaming = status === 'streaming';
 
-  //Temporary debug - remove after fixing
   if (error) console.error("useChat error:", error);
 
   const isDisabled  = isStreaming || isUploadingAttachment;
+
+  // True when every message in state has no visible parts (e.g. only tool-invocation
+  // or image parts the SDK emitted in an unrecognised format). Show welcome screen
+  // instead of a black void.
+  const hasNoVisibleMessages = messages.every(
+    msg => msg.parts.every(p => convertToMessagePart(p) === null)
+  );
 
   return (
     <div
@@ -381,7 +389,7 @@ export default function Chatbot() {
         <div className="w-full max-w-2xl px-4 pt-6 pb-2 space-y-5">
 
           {/* Empty state */}
-          {messages.length === 0 && (
+          {(messages.length === 0 || hasNoVisibleMessages) && (
             <div className="relative flex flex-col items-center justify-center min-h-[55vh] text-center px-4 scale-in">
               {PARTICLES.map((p, i) => (
                 <div key={i} className="absolute rounded-full pointer-events-none"
