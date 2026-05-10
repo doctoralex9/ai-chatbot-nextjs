@@ -27,13 +27,13 @@ function AttachmentImage({ src, alt }: { src: string; alt: string }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        Image unavailable
+        Η εικόνα δεν είναι διαθέσιμη
       </div>
     );
   }
   return (
     <Image src={src} alt={alt} width={640} height={480}
-           className="w-full h-auto object-cover" unoptimized
+           className="w-full max-h-52 object-contain bg-black" unoptimized
            onError={() => setError(true)} />
   );
 }
@@ -153,7 +153,7 @@ export default function ChatMessage({ role, parts, avatarSrc }: ChatMessageProps
 
       {/* Avatar */}
       <div className={`flex-shrink-0 w-7 h-7 rounded-full overflow-hidden ${isUser ? 'avatar-ring-user' : 'avatar-ring'}`}>
-        <Image src={avatarSrc} alt={isUser ? 'You' : 'AI'} width={28} height={28}
+        <Image src={avatarSrc} alt={isUser ? 'Εσύ' : 'AI'} width={28} height={28}
                className="w-full h-full object-cover" />
       </div>
 

@@ -263,7 +263,7 @@ Gamblers who already intend to bet and want a data edge. They don't need lecture
 When you have tool results, always structure your response like this:
 
 ---
-**📊 Bet Analysis — [Match / Selection]**
+**Bet Analysis — [Match / Selection]**
 
 | | |
 |---|---|

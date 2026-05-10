@@ -43,11 +43,11 @@ const supabase = createClient(
 );
 
 const QUICK_ACTIONS = [
-  { label: 'Analyze My Bet',  message: 'I want to analyze a bet I am considering. Can you walk me through the risk, EV, and whether I should place it?' },
-  { label: 'Risk Check',      message: 'What are the key risk factors I should check before placing any bet? Be brutally honest.' },
-  { label: 'Bankroll Advice', message: 'Based on responsible bankroll management, what percentage of my bankroll should I risk per bet, and why?' },
-  { label: 'Stop Losses',     message: 'I feel like I might be chasing losses. Can you help me assess my situation and tell me honestly if I should stop?' },
-  { label: 'Check EV',        message: 'Explain expected value in betting and help me calculate whether a bet I have in mind has positive or negative EV.' },
+  { label: 'Ανάλυση Στοιχήματος', message: 'Θέλω να αναλύσω ένα στοίχημα που σκέφτομαι. Μπορείς να με καθοδηγήσεις στο ρίσκο, EV και αν αξίζει να το παίξω;' },
+  { label: 'Έλεγχος Ρίσκου',      message: 'Ποιοι είναι οι βασικοί παράγοντες ρίσκου που πρέπει να ελέγξω πριν παίξω οποιοδήποτε στοίχημα; Να είσαι ειλικρινής.' },
+  { label: 'Bankroll Συμβουλές',  message: 'Βάσει της σωστής διαχείρισης bankroll, τι ποσοστό πρέπει να ρισκάρω ανά στοίχημα και γιατί;' },
+  { label: 'Έλεγχος Ζημιών',      message: 'Νιώθω ότι κυνηγάω τις ζημιές μου. Βοήθησέ με να αξιολογήσω την κατάσταση και πες μου αν πρέπει να σταματήσω.' },
+  { label: 'Υπολογισμός EV',      message: 'Εξήγησέ μου τι είναι το expected value στα στοιχήματα και βοήθησέ με να υπολογίσω αν ένα στοίχημα έχει θετικό ή αρνητικό EV.' },
 ];
 
 const PARTICLES = [
@@ -63,11 +63,11 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'
 
 function validateImageFile(file: File): string | null {
   const isHeic = /heic|heif/i.test(file.type) || /\.heic$/i.test(file.name);
-  if (isHeic) return 'HEIC not supported. On iPhone: tap Share → "Save as JPEG" and retry.';
+  if (isHeic) return 'Το HEIC δεν υποστηρίζεται. Στο iPhone: πάτα Κοινοποίηση → "Αποθήκευση ως JPEG" και δοκίμασε ξανά.';
   if (!ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase()))
-    return 'Please use JPEG, PNG, GIF, or WebP.';
+    return 'Χρησιμοποίησε JPEG, PNG, GIF ή WebP.';
   if (file.size > 10 * 1024 * 1024)
-    return `Image too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`;
+    return `Η εικόνα είναι πολύ μεγάλη (${(file.size / 1024 / 1024).toFixed(1)} MB). Μέγιστο 10 MB.`;
   return null;
 }
 
@@ -317,10 +317,10 @@ export default function Chatbot() {
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white mb-2">Drop to Analyze</p>
+              <p className="text-2xl font-bold text-white mb-2">Άφεσε για Ανάλυση</p>
               <p className="text-sm max-w-xs leading-relaxed"
                  style={{ color: 'rgba(255,255,255,0.4)' }}>
-                Release your betting slip or coupon screenshot for instant AI analysis
+                Άφεσε το στιγμιότυπο του δελτίου σου για άμεση ανάλυση AI
               </p>
             </div>
             <div className="flex gap-2 flex-wrap justify-center">
@@ -361,18 +361,18 @@ export default function Chatbot() {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+          <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
                style={{ background: 'var(--green-dim)', border: '1px solid var(--green-border)', color: 'var(--green)' }}>
             <span className="w-1.5 h-1.5 rounded-full"
                   style={{ background: 'var(--green)', animation: 'status-pulse 2.5s ease-in-out infinite' }} />
-            Live
+            Ζωντανά
           </div>
           <button
             className="p-2 rounded-xl transition-colors"
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-2)', color: 'var(--text-4)' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-2)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; }}
-            aria-label="Options"
+            aria-label="Επιλογές"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -386,7 +386,7 @@ export default function Chatbot() {
           CHAT AREA
       ══════════════════════════════════════════════ */}
       <main className="relative flex-1 overflow-y-auto flex flex-col items-center">
-        <div className="w-full max-w-2xl px-4 pt-6 pb-2 space-y-5">
+        <div className="w-full max-w-2xl px-4 pt-6 pb-2 space-y-7">
 
           {/* Empty state */}
           {(messages.length === 0 || hasNoVisibleMessages) && (
@@ -415,15 +415,15 @@ export default function Chatbot() {
                 RiskRadar AI
               </h2>
               <p className="text-sm max-w-sm mb-8 leading-relaxed" style={{ color: 'var(--text-3)' }}>
-                Not a tipster. An AI risk copilot that tells you when to step back — before you lose.
+                Δεν κάνει προβλέψεις. Σε αναλύει με δεδομένα και σου λέει πότε να σταματήσεις — πριν χάσεις.
               </p>
 
               <div className="grid grid-cols-2 gap-3 w-full max-w-xs sm:max-w-sm mb-7">
                 {[
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, title: 'Risk Analysis', desc: 'EV & probability', delay: '0.05s' },
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>, title: 'Bankroll Mode', desc: 'Max bet sizing', delay: '0.1s' },
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, title: 'Loss Prevention', desc: 'Protect bankroll', delay: '0.15s' },
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>, title: 'Brutal Honesty', desc: 'Straight talk, no hype', delay: '0.2s' },
+                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, title: 'Ανάλυση Ρίσκου', desc: 'EV & πιθανότητες', delay: '0.05s' },
+                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>, title: 'Διαχείριση Bankroll', desc: 'Σωστό μέγεθος στοιχήματος', delay: '0.1s' },
+                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, title: 'Προστασία Bankroll', desc: 'Αποφυγή μεγάλων ζημιών', delay: '0.15s' },
+                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>, title: 'Απόλυτη Ειλικρίνεια', desc: 'Αλήθεια, χωρίς υπεσχέσεις', delay: '0.2s' },
                 ].map(f => (
                   <div key={f.title} className="card p-3 text-left reveal-up hover:scale-[1.03]"
                        style={{ animationDelay: f.delay, transition: 'all 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
@@ -437,11 +437,11 @@ export default function Chatbot() {
               {/* Drag-to-upload hint */}
               <p className="text-[11px] mb-3 px-4 py-2 rounded-full"
                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }}>
-                ↑ drag &amp; drop a betting slip anywhere to instantly analyze
+                ↑ σύρε &amp; άφεσε ένα δελτίο οπουδήποτε για άμεση ανάλυση
               </p>
 
               <p className="text-xs" style={{ color: 'var(--text-4)' }}>
-                Use the quick actions below or describe a bet
+                Χρησιμοποίησε τις γρήγορες επιλογές ή περίγραψε ένα στοίχημα
               </p>
             </div>
           )}
@@ -468,7 +468,7 @@ export default function Chatbot() {
           {isStreaming && (
             <div className="flex items-end gap-2.5 message-appear">
               <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 avatar-ring">
-                <Image src="/botavatar.jpg" alt="AI thinking" width={28} height={28}
+                <Image src="/botavatar.jpg" alt="Σκέφτομαι…" width={28} height={28}
                        className="w-full h-full object-cover" />
               </div>
               <div className="px-4 py-3 rounded-2xl rounded-bl-sm"
@@ -487,7 +487,7 @@ export default function Chatbot() {
           {isUploadingAttachment && !isStreaming && (
             <div className="flex items-end gap-2.5 message-appear">
               <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 avatar-ring">
-                <Image src="/useravatar.jpg" alt="Uploading" width={28} height={28}
+                <Image src="/useravatar.jpg" alt="Μεταφόρτωση" width={28} height={28}
                        className="w-full h-full object-cover" />
               </div>
               <div className="px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2"
@@ -497,7 +497,7 @@ export default function Chatbot() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                <span className="text-xs" style={{ color: 'var(--text-4)' }}>Uploading image…</span>
+                <span className="text-xs" style={{ color: 'var(--text-4)' }}>Μεταφόρτωση εικόνας…</span>
               </div>
             </div>
           )}
@@ -517,13 +517,13 @@ export default function Chatbot() {
         <div className="w-full max-w-2xl">
           {/* Quick action chips */}
           <div className="px-4 pt-3 pb-0">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
+            <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
               {QUICK_ACTIONS.map(action => (
                 <button
                   key={action.label}
                   onClick={() => handleQuickAction(action.message)}
                   disabled={isDisabled}
-                  className="flex-none px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap snap-start
+                  className="flex-none px-3.5 py-2 rounded-full text-[11px] font-semibold whitespace-nowrap snap-start
                              transition-all duration-200 active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.65)' }}
                   onMouseEnter={e => { if (!isDisabled) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.22)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.9)'; } }}
@@ -549,8 +549,8 @@ export default function Chatbot() {
                 clipRule="evenodd" />
             </svg>
             <p className="text-[10px] leading-snug" style={{ color: 'rgba(251,191,36,0.65)' }}>
-              <span className="font-bold" style={{ color: 'var(--amber)' }}>DISCLAIMER: </span>
-              Betting involves risk. Never wager more than you can afford to lose.
+              <span className="font-bold" style={{ color: 'var(--amber)' }}>ΠΡΟΣΟΧΗ: </span>
+              Τα στοιχήματα εμπεριέχουν κίνδυνο. Μην ποντάρετε ποτέ περισσότερο από ό,τι μπορείτε να χάσετε.
             </p>
           </div>
 
@@ -558,7 +558,7 @@ export default function Chatbot() {
           {attachmentPreviewUrl && (
             <div className="mx-4 mb-2 rounded-xl overflow-hidden message-appear"
                  style={{ border: '1px solid var(--border-3)', background: '#0d0d0d' }}>
-              <Image src={attachmentPreviewUrl} alt="Screenshot preview"
+              <Image src={attachmentPreviewUrl} alt="Προεπισκόπηση στιγμιότυπου"
                      width={400} height={300} unoptimized
                      className="w-full max-h-36 object-cover"
                      onError={() => {
@@ -571,13 +571,13 @@ export default function Chatbot() {
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Screenshot ready
+                  Στιγμιότυπο έτοιμο
                 </span>
                 <button type="button" onClick={handleRemoveAttachment}
                         className="font-medium transition-colors" style={{ color: 'var(--text-4)' }}
                         onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'}
                         onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-4)'}>
-                  Remove
+                  Αφαίρεση
                 </button>
               </div>
             </div>
@@ -614,8 +614,8 @@ export default function Chatbot() {
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-3)', color: 'var(--text-3)' }}
               onMouseEnter={e => { if (!isDisabled) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-1)'; } }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-3)'; }}
-              aria-label="Attach image"
-              title="Attach image (or drag & drop anywhere)"
+              aria-label="Επισύναψη εικόνας"
+              title="Επισύναψη εικόνας (ή σύρε &amp; άφεσε οπουδήποτε)"
             >
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -631,7 +631,7 @@ export default function Chatbot() {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 disabled={isDisabled}
-                placeholder="Ask about odds, drop a betting slip, or describe a bet…"
+                placeholder="Ρώτησε για αποδόσεις, ρίξε ένα δελτίο ή περίγραψε ένα στοίχημα…"
                 rows={1}
                 className="w-full min-h-[44px] max-h-[160px] px-4 py-3 pr-3 rounded-xl resize-none overflow-y-auto
                            text-sm leading-relaxed input-field disabled:opacity-50"
@@ -645,8 +645,8 @@ export default function Chatbot() {
                 onClick={stop}
                 className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
                 style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff5050' }}
-                aria-label="Stop generating"
-                title="Stop"
+                aria-label="Διακοπή δημιουργίας"
+                title="Διακοπή"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <rect x="6" y="6" width="12" height="12" rx="2" />
@@ -657,7 +657,7 @@ export default function Chatbot() {
               type="submit"
               disabled={isUploadingAttachment || (!input.trim() && !attachmentFile)}
               className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center btn-primary"
-              aria-label="Send message"
+              aria-label="Αποστολή μηνύματος"
             >
               {isUploadingAttachment ? (
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

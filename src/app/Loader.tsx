@@ -47,7 +47,7 @@ export default function Loader() {
 
       <div className="text-center">
         <p className="text-sm font-semibold text-gradient tracking-wide">RiskRadar AI</p>
-        <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-4)' }}>Loading your session…</p>
+        <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-4)' }}>Φόρτωση συνεδρίας…</p>
       </div>
 
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
