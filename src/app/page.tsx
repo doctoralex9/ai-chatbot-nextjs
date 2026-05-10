@@ -230,7 +230,7 @@ export default function Chatbot() {
       ? [{ type: 'file', mediaType: currentFile.type || 'image/jpeg', filename: currentFile.name, url: attachmentUrl }]
       : [];
     sendMessage({
-      text: currentInput,
+      text: currentInput || (fileParts.length > 0 ? 'Analyze this betting slip for me' : ''),
       ...(fileParts.length > 0 && { files: fileParts }),
     });
 
