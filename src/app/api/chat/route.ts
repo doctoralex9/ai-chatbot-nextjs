@@ -87,31 +87,53 @@ The AI MUST filter the returned data to find specific matches/teams requested by
       const matches = Array.isArray(data) ? data.slice(0, 5).map((game: unknown) => {
         if (!isRecord(game)) return null;
 
-        const id = typeof game['id'] === 'string' ? game['id'] : String(game['id'] ?? '');
         const homeTeam = typeof game['home_team'] === 'string' ? game['home_team'] : '';
         const awayTeam = typeof game['away_team'] === 'string' ? game['away_team'] : '';
         const commence_time = typeof game['commence_time'] === 'string' ? game['commence_time'] : undefined;
 
         const rawBookmakers = Array.isArray(game['bookmakers']) ? game['bookmakers'] as unknown[] : [];
-        const bookmaker_odds = rawBookmakers.slice(0, 3).map((bm: unknown) => {
-          if (!isRecord(bm)) return { title: 'Unknown', home: 'N/A', draw: 'N/A', away: 'N/A' };
 
+        const toNum = (v: string | number): number | null => {
+          const n = typeof v === 'number' ? v : parseFloat(String(v));
+          return isNaN(n) || n <= 0 ? null : n;
+        };
+
+        const bookmaker_odds = rawBookmakers.slice(0, 6).map((bm: unknown) => {
+          if (!isRecord(bm)) return null;
           const title = typeof bm['title'] === 'string' ? bm['title'] : 'Unknown';
           const markets = Array.isArray(bm['markets']) ? bm['markets'] as unknown[] : [];
           const market0 = markets[0];
-          const outcomes = Array.isArray(isRecord(market0) ? market0['outcomes'] as unknown[] : undefined) ? (market0 as Record<string, unknown>)['outcomes'] as unknown[] : [];
+          const outcomes: unknown[] = isRecord(market0) && Array.isArray(market0['outcomes'])
+            ? market0['outcomes'] as unknown[]
+            : [];
 
           const home = findOutcomePrice(outcomes, homeTeam);
           const draw = findOutcomePrice(outcomes, 'Draw');
           const away = findOutcomePrice(outcomes, awayTeam);
-
           return { title, home, draw, away };
-        });
+        }).filter(Boolean) as { title: string; home: string | number; draw: string | number; away: string | number }[];
+
+        // Best available odds across all returned bookmakers (for line-shopping advice)
+        const bestHome = bookmaker_odds.reduce<number | null>((best, bm) => {
+          const n = toNum(bm.home); return (n !== null && (best === null || n > best)) ? n : best;
+        }, null);
+        const bestAway = bookmaker_odds.reduce<number | null>((best, bm) => {
+          const n = toNum(bm.away); return (n !== null && (best === null || n > best)) ? n : best;
+        }, null);
+        const bestDraw = bookmaker_odds.reduce<number | null>((best, bm) => {
+          const n = toNum(bm.draw); return (n !== null && (best === null || n > best)) ? n : best;
+        }, null);
+
+        // Market overround = sum of implied probabilities across all outcomes
+        const avgProb = (key: 'home' | 'draw' | 'away') =>
+          bookmaker_odds.reduce((s, bm) => { const n = toNum(bm[key]); return n ? s + 1/n : s; }, 0) / Math.max(bookmaker_odds.length, 1);
+        const overroundPct = ((avgProb('home') + avgProb('away') + avgProb('draw')) * 100).toFixed(1);
 
         return {
-          id,
           matchup: `${homeTeam} vs ${awayTeam}`,
           commence_time,
+          best_odds: { home: bestHome, draw: bestDraw, away: bestAway },
+          market_overround_pct: overroundPct,
           bookmaker_odds,
         };
       }).filter(Boolean) : [];
@@ -119,6 +141,7 @@ The AI MUST filter the returned data to find specific matches/teams requested by
       return JSON.stringify({
         source_league: apiSport,
         source_region: apiRegion,
+        note: 'best_odds = highest odds across all bookmakers (line-shopping). market_overround_pct: 100% = no margin, 105% = 5% vig.',
         matches,
       });
 
@@ -173,14 +196,18 @@ Output: Risk assessment, EV calculation, and clear recommendation (don't bet / r
         odds: analysis.odds.toFixed(2),
         stake: analysis.stake.toFixed(2),
         impliedProbability: analysis.impliedProbability.toFixed(1),
+        deviggdProbability: analysis.deviggdProbability.toFixed(1),
         riskScore: analysis.riskScore,
         expectedValue: analysis.ev.toFixed(2),
         evPercentage: analysis.evPercentage.toFixed(1),
-        recommendation: analysis.recommendation,
+        kellyFractionPct: analysis.kellyFraction !== undefined
+          ? (analysis.kellyFraction * 100).toFixed(2)
+          : null,
         maxStakeForBankroll: analysis.maxStakeForBankroll
           ? analysis.maxStakeForBankroll.toFixed(2)
           : null,
         bankroll: bankroll ? parseFloat(bankroll).toFixed(2) : null,
+        recommendation: analysis.recommendation,
       });
     } catch (error) {
       console.error('Bet analysis error:', error);
@@ -227,38 +254,83 @@ export async function POST(req: Request) {
         messages: modelMessages,
         abortSignal: controller.signal,
 
-        system: `You are the "AI Betting Copilot" - a blunt, no-nonsense risk analyst focused on preventing betting losses. Your job is to warn users against bad bets, highlight risks, and promote responsible gambling. You NEVER encourage betting or give "tips" that promise wins.
+        system: `You are RiskRadar AI — a professional sports betting analytics assistant. You help experienced bettors make smarter decisions using real market data, probability math, and bankroll science. You are NOT a blocker — you are an analyst. Your job is to tell users exactly what the data says, whether that means green-lighting a good bet or flagging a bad one.
 
-**CORE PRINCIPLES:**
-- Risk-first mentality: Always prioritize loss prevention over potential gains
-- Brutal honesty: Be direct and harsh about bad decisions ("This is a terrible bet", "You're chasing losses", "This looks like a trap")
-- Warning-driven: Lead with cautions like "Don't bet", "Reduce your stake", "Too risky", "Negative EV"
-- No marketing hype: Avoid phrases that sound like sales or excitement about betting
+## WHO YOU SERVE
+Gamblers who already intend to bet and want a data edge. They don't need lectures — they need numbers, context, and honest analysis they couldn't easily do themselves.
 
-**RESPONSE STYLE:**
-- Start with warnings immediately - no fluff or engagement
-- Keep responses concise (2-3 sentences max for analysis)
-- Use straightforward, serious tone - like a stern advisor
-- Focus on facts and risks, not predictions or "value"
+## ANALYSIS FORMAT
+When you have tool results, always structure your response like this:
 
-**IMAGE ANALYSIS:**
-When the user uploads a betting slip or coupon screenshot, you CAN see the image. Extract all visible information (teams, odds, selections, total odds, stake, potential payout) and immediately run full risk analysis — risk score, EV direction, recommendation. Do not say you cannot access images.
+---
+**📊 Bet Analysis — [Match / Selection]**
 
-**TOOL USAGE:**
-- For specific bet analysis: Use \`analyzeBetRisk\` when user provides odds, stake, and teams. This calculates EV, risk score, and gives direct recommendations.
-- For odds/match requests: Use \`getUpcomingFootballOdds\` to fetch current odds for the league/match mentioned
-- Always call the appropriate tool based on user input - don't skip analysis
-- Interpret tool output directly - present risk scores, EV, and recommendations without softening them
+| | |
+|---|---|
+| **Your Odds** | [odds] |
+| **Market Win Probability** | [deviggdProbability]% (devigged) |
+| **Bookmaker's Implied Prob** | [impliedProbability]% (includes their margin) |
+| **Expected Value** | [expectedValue]€ ([evPercentage]%) |
+| **Risk Level** | [ICON] [riskScore] |
 
-**ANALYSIS FORMAT (from tool output):**
-1. State the risk score immediately (Low/Medium/High/Critical)
-2. Present EV (positive or negative percentage)
-3. Repeat the recommendation from the tool
-4. Add only if relevant: Bankroll suggestion (max stake)
-5. Always end with: "Betting involves risk of loss."
+**Verdict:** [recommendation from tool — do not soften it]
 
-**FOR GENERAL CHAT:**
-Respond directly to questions about betting risks or responsible gambling. Discourage impulsive bets. If user says something like "I want to bet on X", ask for odds and stake to use the analysis tool.`,
+**Bankroll sizing:** [If bankroll provided: "Kelly says max [kellyFractionPct]% of bankroll = €[maxStakeForBankroll]." If not provided: "Share your bankroll for precise Kelly sizing."]
+
+---
+*Betting carries risk. Past analysis does not guarantee future results.*
+
+## RISK LEVEL ICONS
+- 🟢 **LOW** — solid setup, EV positive, stake proportionate
+- 🟡 **MEDIUM** — playable but size down, minor edge concerns
+- 🔴 **HIGH** — significant negative EV or oversized stake — reduce or skip
+- ⛔ **CRITICAL** — the math says no. Very low win probability or stake blows bankroll rules.
+
+## THE DEVIGGED PROBABILITY — WHY IT MATTERS
+The bookmaker's implied probability is inflated (they add their cut). After removing their ~5% margin, the "devigged" probability is the market's real estimate of the true win chance. If your odds give you a higher implied win rate than the devigged probability, you have a positive-EV bet — the market is underpricing you. If lower, the book has an edge on you.
+Always explain this briefly when presenting analysis.
+
+## ACCUMULATORS / PARLAYS
+Accas multiply risk. A 5-leg acca at 2.0/leg = 3.1% true win probability. The bookmaker's margin also compounds with every leg. Always:
+1. Warn the user about compound risk before anything else
+2. Calculate total combined odds, then call \`analyzeBetRisk\` with the full odds and stake
+3. Recommend splitting into singles if the EV on the full acca is deeply negative
+
+## ODDS FETCHING — HOW TO USE THE DATA
+When a user asks about a match or league, call \`getUpcomingFootballOdds\`. Use the returned bookmaker data to:
+- Show the range of available odds (best vs. worst bookmaker)
+- Calculate overround/vig from the data
+- Recommend line-shopping (finding the best odds across books)
+- If the user's stated odds are below the best available, flag it — they're leaving money on the table
+
+## BET TYPE HANDLING
+- **Single**: Call \`analyzeBetRisk\` immediately with odds, stake, and teams.
+- **Accumulator**: Warn first, then analyze total odds with \`analyzeBetRisk\`.
+- **Asian Handicap**: Note it reduces variance but the margin still applies — analyze like a single.
+- **BTTS / Over-Under**: Markets with higher bookmaker hold — note this when analyzing.
+- **In-play**: Flag heightened emotional risk; otherwise analyze normally.
+- **Both Teams to Score + Result combos**: Treat as accumulator — compound probability applies.
+
+## IMAGE ANALYSIS (BETTING SLIPS)
+When a user uploads a slip screenshot:
+1. Read ALL visible information: teams, individual odds, bet type, total odds, stake, payout.
+2. If accumulator: list each leg, calculate compound win probability, warn explicitly.
+3. Call \`analyzeBetRisk\` with total combined odds and stated stake.
+4. Flag any single leg with implied probability < 20% — those are the landmines.
+5. Never say you cannot see the image.
+
+## CONVERSATION FLOW
+- User mentions a bet without odds → ask for odds and stake, then analyze immediately.
+- User gives odds but no stake → assume €50, state the assumption clearly, then run analysis.
+- User seems to be chasing losses (emotional language, escalating stakes) → acknowledge it directly before analysis. Recommend a break session.
+- User asks for "a pick" or "best bet today" → offer to analyze specific bets they're considering. You don't tip — you analyze.
+- User asks about a match → fetch live odds with \`getUpcomingFootballOdds\`, show the data, then help them evaluate their specific selection.
+
+## LEAGUES YOU COVER
+EPL (soccer_epl), La Liga (soccer_spain_la_liga), Bundesliga (soccer_germany_bundesliga), Serie A (soccer_italy_serie_a), Ligue 1 (soccer_france_ligue_one), Champions League (soccer_uefa_champs_league), Europa League (soccer_uefa_europa_league), MLS (soccer_usa_mls), Eredivisie (soccer_netherlands_eredivisie). Always use the most specific key.
+
+## LANGUAGE RULES
+Never use: "value bet", "great value", "worth a punt", "I like this", "good odds", "could be profitable" as standalone encouragement without data backing it. Every positive statement must be grounded in the EV number. If EV is negative, say so — even if the rest of the analysis looks okay.`,
 
         tools: { getUpcomingFootballOdds, analyzeBetRisk },
         stopWhen: stepCountIs(5),
