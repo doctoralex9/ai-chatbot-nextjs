@@ -83,7 +83,9 @@ export default function Chatbot() {
   const bottomRef      = useRef<HTMLDivElement | null>(null);
   const textareaRef    = useRef<HTMLTextAreaElement | null>(null);
 
-  const { messages, setMessages, sendMessage, status } = useChat();
+  const { messages, setMessages, sendMessage, status, error, stop } = useChat({
+    onError: (err) => console.error('[useChat error]', err),
+  });
 
   useEffect(() => {
     const fetchChatHistory = async () => {
@@ -263,6 +265,10 @@ export default function Chatbot() {
   if (isLoadingHistory) return <Loading />;
 
   const isStreaming = status === 'streaming';
+
+  //Temporary debug - remove after fixing
+  if (error) console.error("useChat error:", error);
+
   const isDisabled  = isStreaming || isUploadingAttachment;
 
   return (
@@ -624,10 +630,24 @@ export default function Chatbot() {
               />
             </div>
 
-            {/* Send button */}
+            {/* Send / Stop button */}
+            {isStreaming ? (
+              <button
+                type="button"
+                onClick={stop}
+                className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff5050' }}
+                aria-label="Stop generating"
+                title="Stop"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+              </button>
+            ) : (
             <button
               type="submit"
-              disabled={isDisabled || (!input.trim() && !attachmentFile)}
+              disabled={isUploadingAttachment || (!input.trim() && !attachmentFile)}
               className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center btn-primary"
               aria-label="Send message"
             >
@@ -643,6 +663,7 @@ export default function Chatbot() {
                 </svg>
               )}
             </button>
+            )}
           </form>
         </div>
         </div>
