@@ -193,7 +193,7 @@ export default function Chatbot() {
     setIsUploadingAttachment(true);
     try {
       const url  = await uploadAttachment(file);
-      const text = input.trim() || 'Analyze this betting slip for me';
+      const text = input.trim();
       const filePart: FileUIPart = { type: 'file', mediaType: file.type || 'image/jpeg', filename: file.name, url };
       sendMessage({ text, files: [filePart] });
       setInput('');
@@ -230,7 +230,7 @@ export default function Chatbot() {
       ? [{ type: 'file', mediaType: currentFile.type || 'image/jpeg', filename: currentFile.name, url: attachmentUrl }]
       : [];
     sendMessage({
-      text: currentInput || (fileParts.length > 0 ? 'Analyze this betting slip for me' : ''),
+      text: currentInput,
       ...(fileParts.length > 0 && { files: fileParts }),
     });
 
@@ -565,20 +565,29 @@ export default function Chatbot() {
                        setUploadError('Could not preview this image.');
                        setAttachmentFile(null);
                      }} />
-              <div className="flex items-center justify-between px-3 py-2 text-xs"
-                   style={{ borderTop: '1px solid var(--border-2)' }}>
-                <span className="font-semibold flex items-center gap-1" style={{ color: 'var(--green)' }}>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              <div style={{ borderTop: '1px solid var(--border-2)' }}>
+                <div className="flex items-center justify-between px-3 py-2 text-xs">
+                  <span className="font-semibold flex items-center gap-1" style={{ color: 'var(--green)' }}>
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Στιγμιότυπο έτοιμο
+                  </span>
+                  <button type="button" onClick={handleRemoveAttachment}
+                          className="font-medium transition-colors" style={{ color: 'var(--text-4)' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'}
+                          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-4)'}>
+                    Αφαίρεση
+                  </button>
+                </div>
+                <p className="px-3 pb-2 text-[10px] leading-snug flex items-start gap-1.5"
+                   style={{ color: 'rgba(251,191,36,0.6)' }}>
+                  <svg className="w-3 h-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"
+                       style={{ color: 'var(--amber)' }}>
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  Στιγμιότυπο έτοιμο
-                </span>
-                <button type="button" onClick={handleRemoveAttachment}
-                        className="font-medium transition-colors" style={{ color: 'var(--text-4)' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-4)'}>
-                  Αφαίρεση
-                </button>
+                  Βεβαιώσου ότι φαίνονται καθαρά τα ματσ, οι αποδόσεις και το ποσό — χωρίς ειδοποιήσεις ή banner στην οθόνη.
+                </p>
               </div>
             </div>
           )}
@@ -633,8 +642,9 @@ export default function Chatbot() {
                 disabled={isDisabled}
                 placeholder="Ρώτησε για αποδόσεις, ρίξε ένα δελτίο ή περίγραψε ένα στοίχημα…"
                 rows={1}
+                style={{ fontSize: '16px' }}
                 className="w-full min-h-[44px] max-h-[160px] px-4 py-3 pr-3 rounded-xl resize-none overflow-y-auto
-                           text-sm leading-relaxed input-field disabled:opacity-50"
+                           leading-relaxed input-field disabled:opacity-50"
               />
             </div>
 

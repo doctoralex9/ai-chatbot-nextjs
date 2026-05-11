@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
@@ -17,7 +18,7 @@ interface ChatMessageProps {
 // Matches Supabase storage image URLs embedded in text
 const IMAGE_URL_REGEX = /https:\/\/[^\s\n]+\.(?:jpg|jpeg|png|gif|webp)/gi;
 
-// ── Attachment image with broken-image fallback + zoom affordance ─────────
+// ── Attachment image with zoom affordance ──────────────────────────────────
 function AttachmentImage({ src, alt, onClick }: { src: string; alt: string; onClick?: () => void }) {
   const [error, setError] = useState(false);
   if (error) {
@@ -38,7 +39,6 @@ function AttachmentImage({ src, alt, onClick }: { src: string; alt: string; onCl
         <Image src={src} alt={alt} width={640} height={480}
                className="w-full max-h-52 object-contain bg-black" unoptimized
                onError={() => setError(true)} />
-        {/* Hover overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
              style={{ background: 'rgba(0,0,0,0.38)' }}>
           <div className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -60,18 +60,36 @@ function AttachmentImage({ src, alt, onClick }: { src: string; alt: string; onCl
   );
 }
 
-// ── Lightbox overlay ───────────────────────────────────────────────────────
+// ── Lightbox — rendered via portal so it always sits above the scroll container
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
-  return (
+  // Lock body scroll while open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(18px)', animation: 'fade-in 0.18s ease-out both' }}
+      className="fixed inset-0 flex items-center justify-center"
+      style={{
+        zIndex: 99999,
+        background: 'rgba(0,0,0,0.93)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        animation: 'fade-in 0.18s ease-out both',
+      }}
       onClick={onClose}
     >
       {/* Close button */}
       <button
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#ffffff' }}
+        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+        style={{
+          zIndex: 100000,
+          background: 'rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          color: '#ffffff',
+        }}
         onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Κλείσιμο"
       >
@@ -80,10 +98,14 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
         </svg>
       </button>
 
-      {/* Image — stop propagation so clicking the image doesn't close */}
+      {/* Image — stopPropagation so clicking the image itself doesn't close */}
       <div
-        className="overflow-auto"
-        style={{ animation: 'scale-in 0.2s var(--ease-spring) both', maxWidth: '95vw', maxHeight: '95vh' }}
+        style={{
+          animation: 'scale-in 0.22s var(--ease-spring) both',
+          maxWidth: '95vw',
+          maxHeight: '90vh',
+          overflow: 'auto',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -93,19 +115,23 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
           style={{
             display: 'block',
             maxWidth: '95vw',
-            maxHeight: '95vh',
+            maxHeight: '90vh',
             objectFit: 'contain',
             touchAction: 'pinch-zoom',
             borderRadius: '10px',
-            boxShadow: '0 12px 80px rgba(0,0,0,0.85)',
+            boxShadow: '0 16px 80px rgba(0,0,0,0.9)',
           }}
         />
       </div>
 
-      <p className="absolute bottom-6 text-xs pointer-events-none" style={{ color: 'rgba(255,255,255,0.28)' }}>
+      <p
+        className="absolute bottom-6 text-xs pointer-events-none select-none"
+        style={{ color: 'rgba(255,255,255,0.25)' }}
+      >
         Πάτα οπουδήποτε ή Esc για κλείσιμο
       </p>
-    </div>
+    </div>,
+    document.body
   );
 }
 
