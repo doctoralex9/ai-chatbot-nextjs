@@ -1,34 +1,39 @@
-﻿import { openai } from '@ai-sdk/openai';
+import { openai } from '@ai-sdk/openai';
 import { streamText, UIMessage, convertToModelMessages, dynamicTool, stepCountIs } from 'ai';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { analyzeBet } from '@/lib/betAnalysis';
+
+const FREE_LIMIT = 5;
 
 const isTextPart = (part: unknown): part is { type: 'text'; text?: string } =>
   typeof part === 'object' && part !== null && (part as { type?: string }).type === 'text';
 
-// Initialize Supabase client for server-side operations (HIGH SECURITY)
-const supabase = createClient(
+// Service-role client — bypasses RLS for server-side DB operations
+const supabaseAdmin = createSupabaseClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // MUST use service role key for security
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Define the core tool for fetching odds
+function getNextMonthStart(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+}
+
 const getUpcomingFootballOdds = dynamicTool({
-  description: `Get live betting odds and upcoming football matches for an ENTIRE LEAGUE or TOURNAMENT. 
+  description: `Get live betting odds and upcoming football matches for an ENTIRE LEAGUE or TOURNAMENT.
 The tool CANNOT accept specific team names (like Real Madrid) or individual match names as input.
-Use this tool to get a list of upcoming fixtures for the league determined by the user's request. 
+Use this tool to get a list of upcoming fixtures for the league determined by the user's request.
 The AI MUST filter the returned data to find specific matches/teams requested by the user.`,
 
   inputSchema: z.object({
-    // Parameters are NOT optional in Zod, but we will provide defaults in the execute function.
     sport: z.string().describe('Football league key: "soccer_epl", "soccer_uefa_champs_league", "soccer_spain_la_liga", etc. Use the most specific key.'),
     region: z.string().describe('Odds format: "us" (American), "uk" (British), or "eu" (European decimal).'),
   }),
 
   execute: async (input) => {
-    // Aggressive Defaults for immediate tool execution (Pro-level UX)
-    // Validate input shape at runtime using Zod and apply safe defaults.
     const OddsToolInput = z.object({
       sport: z.string().optional(),
       region: z.string().optional(),
@@ -36,14 +41,12 @@ The AI MUST filter the returned data to find specific matches/teams requested by
 
     const parsed = OddsToolInput.safeParse(input);
     if (!parsed.success) {
-      // Invalid input β€” log for debugging and fall back to safe defaults
       console.warn('getUpcomingFootballOdds: invalid input, using defaults', parsed.error);
     }
 
-    const apiSport = parsed.success ? (parsed.data.sport ?? "soccer_uefa_champs_league") : "soccer_uefa_champs_league";
-    const apiRegion = parsed.success ? (parsed.data.region ?? "us") : "us";
+    const apiSport  = parsed.success ? (parsed.data.sport  ?? 'soccer_uefa_champs_league') : 'soccer_uefa_champs_league';
+    const apiRegion = parsed.success ? (parsed.data.region ?? 'us') : 'us';
 
-    // Helper type guards to safely handle external JSON shapes
     const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null;
     const findOutcomePrice = (outcomes: unknown[], name: string): string | number => {
       for (const o of outcomes) {
@@ -60,137 +63,95 @@ The AI MUST filter the returned data to find specific matches/teams requested by
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId  = setTimeout(() => controller.abort(), 10000);
 
       const url = `https://api.the-odds-api.com/v4/sports/${apiSport}/odds/?apiKey=${process.env.THE_ODDS_API_KEY}&regions=${apiRegion}&markets=h2h`;
-      const response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-
+      const response = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
       clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.error('Odds API error:', response.status, response.statusText);
-        return `ERROR: Odds data unavailable (${response.status}). The service is currently experiencing high load. Please try again.`;
+        return `ERROR: Odds data unavailable (${response.status}). Please try again.`;
       }
 
       const data = await response.json();
-
       if (!data || data.error || data.length === 0) {
-        return `NODATA: No upcoming ${apiSport.replace('soccer_', '').replace('_', ' ')} matches found. Please check a different league or date.`;
+        return `NODATA: No upcoming ${apiSport.replace('soccer_', '').replace('_', ' ')} matches found.`;
       }
 
-      // π› οΈ Professional Fix: Return structured JSON for easier, faster AI analysis.
+      const toNum = (v: string | number): number | null => {
+        const n = typeof v === 'number' ? v : parseFloat(String(v));
+        return isNaN(n) || n <= 0 ? null : n;
+      };
+
       const matches = Array.isArray(data) ? data.slice(0, 5).map((game: unknown) => {
         if (!isRecord(game)) return null;
 
-        const homeTeam = typeof game['home_team'] === 'string' ? game['home_team'] : '';
-        const awayTeam = typeof game['away_team'] === 'string' ? game['away_team'] : '';
+        const homeTeam      = typeof game['home_team'] === 'string' ? game['home_team'] : '';
+        const awayTeam      = typeof game['away_team'] === 'string' ? game['away_team'] : '';
         const commence_time = typeof game['commence_time'] === 'string' ? game['commence_time'] : undefined;
-
         const rawBookmakers = Array.isArray(game['bookmakers']) ? game['bookmakers'] as unknown[] : [];
-
-        const toNum = (v: string | number): number | null => {
-          const n = typeof v === 'number' ? v : parseFloat(String(v));
-          return isNaN(n) || n <= 0 ? null : n;
-        };
 
         const bookmaker_odds = rawBookmakers.slice(0, 6).map((bm: unknown) => {
           if (!isRecord(bm)) return null;
-          const title = typeof bm['title'] === 'string' ? bm['title'] : 'Unknown';
-          const markets = Array.isArray(bm['markets']) ? bm['markets'] as unknown[] : [];
-          const market0 = markets[0];
+          const title    = typeof bm['title'] === 'string' ? bm['title'] : 'Unknown';
+          const markets  = Array.isArray(bm['markets']) ? bm['markets'] as unknown[] : [];
+          const market0  = markets[0];
           const outcomes: unknown[] = isRecord(market0) && Array.isArray(market0['outcomes'])
             ? market0['outcomes'] as unknown[]
             : [];
-
-          const home = findOutcomePrice(outcomes, homeTeam);
-          const draw = findOutcomePrice(outcomes, 'Draw');
-          const away = findOutcomePrice(outcomes, awayTeam);
-          return { title, home, draw, away };
+          return { title, home: findOutcomePrice(outcomes, homeTeam), draw: findOutcomePrice(outcomes, 'Draw'), away: findOutcomePrice(outcomes, awayTeam) };
         }).filter(Boolean) as { title: string; home: string | number; draw: string | number; away: string | number }[];
 
-        // Best available odds across all returned bookmakers (for line-shopping advice)
-        const bestHome = bookmaker_odds.reduce<number | null>((best, bm) => {
-          const n = toNum(bm.home); return (n !== null && (best === null || n > best)) ? n : best;
-        }, null);
-        const bestAway = bookmaker_odds.reduce<number | null>((best, bm) => {
-          const n = toNum(bm.away); return (n !== null && (best === null || n > best)) ? n : best;
-        }, null);
-        const bestDraw = bookmaker_odds.reduce<number | null>((best, bm) => {
-          const n = toNum(bm.draw); return (n !== null && (best === null || n > best)) ? n : best;
-        }, null);
+        const bestHome = bookmaker_odds.reduce<number | null>((b, bm) => { const n = toNum(bm.home); return (n !== null && (b === null || n > b)) ? n : b; }, null);
+        const bestAway = bookmaker_odds.reduce<number | null>((b, bm) => { const n = toNum(bm.away); return (n !== null && (b === null || n > b)) ? n : b; }, null);
+        const bestDraw = bookmaker_odds.reduce<number | null>((b, bm) => { const n = toNum(bm.draw); return (n !== null && (b === null || n > b)) ? n : b; }, null);
 
-        // Market overround = sum of implied probabilities across all outcomes
         const avgProb = (key: 'home' | 'draw' | 'away') =>
           bookmaker_odds.reduce((s, bm) => { const n = toNum(bm[key]); return n ? s + 1/n : s; }, 0) / Math.max(bookmaker_odds.length, 1);
         const overroundPct = ((avgProb('home') + avgProb('away') + avgProb('draw')) * 100).toFixed(1);
 
-        return {
-          matchup: `${homeTeam} vs ${awayTeam}`,
-          commence_time,
-          best_odds: { home: bestHome, draw: bestDraw, away: bestAway },
-          market_overround_pct: overroundPct,
-          bookmaker_odds,
-        };
+        return { matchup: `${homeTeam} vs ${awayTeam}`, commence_time, best_odds: { home: bestHome, draw: bestDraw, away: bestAway }, market_overround_pct: overroundPct, bookmaker_odds };
       }).filter(Boolean) : [];
 
       return JSON.stringify({
         source_league: apiSport,
         source_region: apiRegion,
-        note: 'best_odds = highest odds across all bookmakers (line-shopping). market_overround_pct: 100% = no margin, 105% = 5% vig.',
+        note: 'best_odds = highest odds across all bookmakers. market_overround_pct: 100% = no margin, 105% = 5% vig.',
         matches,
       });
-
     } catch (error: unknown) {
-      const err = error;
-      if (err instanceof Error) {
-        console.error('Error fetching odds:', err.message);
-        if (err.name === 'AbortError') {
-          return 'TIMEOUT: The odds API is taking too long to respond. Please try again.';
-        }
-      } else {
-        console.error('Error fetching odds (non-Error):', err);
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') return 'TIMEOUT: The odds API is taking too long. Please try again.';
+        console.error('Error fetching odds:', error.message);
       }
       return 'CRITICAL_ERROR: Failed to retrieve odds. Check API configuration.';
     }
   },
 });
 
-// New tool: Analyze bet for risk and EV
 const analyzeBetRisk = dynamicTool({
-  description: `Analyze a specific bet for risk score, expected value (EV), and recommendation. 
-Use this when a user provides specific odds, stake, and teams they want to analyze.
-Input: odds (decimal or American format), stake in euros, optional bankroll.
-Output: Risk assessment, EV calculation, and clear recommendation (don't bet / reduce stake).`,
+  description: `Analyze a specific bet for risk score, expected value (EV), and recommendation.
+Use this when a user provides specific odds, stake, and teams they want to analyze.`,
 
   inputSchema: z.object({
-    odds: z.string().describe('Odds in decimal (2.50) or American (-110, +200) format'),
-    stake: z.string().describe('Bet stake amount in euros'),
-    teams: z.string().optional().describe('Teams/match description'),
+    odds:     z.string().describe('Odds in decimal (2.50) or American (-110, +200) format'),
+    stake:    z.string().describe('Bet stake amount in euros'),
+    teams:    z.string().optional().describe('Teams/match description'),
     bankroll: z.string().optional().describe('Total available bankroll in euros'),
   }),
 
   execute: async (input) => {
     const parsed = z.object({
-      odds: z.string(),
-      stake: z.string(),
-      teams: z.string().optional(),
-      bankroll: z.string().optional(),
+      odds: z.string(), stake: z.string(),
+      teams: z.string().optional(), bankroll: z.string().optional(),
     }).safeParse(input);
 
-    if (!parsed.success) {
-      return 'Invalid input. Provide odds (e.g., 2.50), stake (e.g., 50), and optional bankroll.';
-    }
+    if (!parsed.success) return 'Invalid input. Provide odds (e.g., 2.50), stake (e.g., 50), and optional bankroll.';
 
     const { odds, stake, teams, bankroll } = parsed.data;
-
     try {
       const analysis = analyzeBet(odds, stake, bankroll);
-
       return JSON.stringify({
         match: teams || 'Unnamed bet',
         odds: analysis.odds.toFixed(2),
@@ -200,12 +161,8 @@ Output: Risk assessment, EV calculation, and clear recommendation (don't bet / r
         riskScore: analysis.riskScore,
         expectedValue: analysis.ev.toFixed(2),
         evPercentage: analysis.evPercentage.toFixed(1),
-        kellyFractionPct: analysis.kellyFraction !== undefined
-          ? (analysis.kellyFraction * 100).toFixed(2)
-          : null,
-        maxStakeForBankroll: analysis.maxStakeForBankroll
-          ? analysis.maxStakeForBankroll.toFixed(2)
-          : null,
+        kellyFractionPct: analysis.kellyFraction !== undefined ? (analysis.kellyFraction * 100).toFixed(2) : null,
+        maxStakeForBankroll: analysis.maxStakeForBankroll ? analysis.maxStakeForBankroll.toFixed(2) : null,
         bankroll: bankroll ? parseFloat(bankroll).toFixed(2) : null,
         recommendation: analysis.recommendation,
       });
@@ -218,16 +175,63 @@ Output: Risk assessment, EV calculation, and clear recommendation (don't bet / r
 
 export async function POST(req: Request) {
   try {
+    // ── 1. Authenticate user ────────────────────────────────────────────────
+    const cookieStore = await cookies();
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(c) { c.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); },
+        },
+      }
+    );
+
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (!user) return new Response('Unauthorized', { status: 401 });
+
+    // ── 2. Check + enforce monthly usage limit ──────────────────────────────
+    let { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('analyses_count, analyses_reset_at')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) {
+      // Auto-create profile if missing (e.g. user signed up before trigger was added)
+      const nextReset = getNextMonthStart();
+      await supabaseAdmin.from('profiles').insert({ id: user.id, analyses_count: 0, analyses_reset_at: nextReset });
+      profile = { analyses_count: 0, analyses_reset_at: nextReset };
+    }
+
+    const now     = new Date();
+    const resetAt = new Date(profile.analyses_reset_at);
+
+    if (now > resetAt) {
+      // Reset counter for new month
+      const nextReset = getNextMonthStart();
+      await supabaseAdmin
+        .from('profiles')
+        .update({ analyses_count: 0, analyses_reset_at: nextReset })
+        .eq('id', user.id);
+      profile = { analyses_count: 0, analyses_reset_at: nextReset };
+    }
+
+    if (profile.analyses_count >= FREE_LIMIT) {
+      return Response.json(
+        { code: 'LIMIT_REACHED', resetAt: profile.analyses_reset_at, limit: FREE_LIMIT },
+        { status: 429 }
+      );
+    }
+
+    // ── 3. Parse request body ───────────────────────────────────────────────
     const { messages }: { messages: UIMessage[] } = await req.json();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 55000);
+    const timeoutId  = setTimeout(() => controller.abort(), 55000);
 
     try {
-      // convertToModelMessages puts FileUIPart.url (a string) into FilePart.data.
-      // @ai-sdk/openai only handles URL *objects* for remote URLs — string URLs get
-      // incorrectly treated as raw base64 and double-encoded (SDK bug in v2.0.32).
-      // Fix: walk the model messages and convert any HTTPS data string to URL object.
       const rawModelMessages = convertToModelMessages(messages);
       const modelMessages = rawModelMessages.map(msg => {
         if (msg.role !== 'user' || !Array.isArray(msg.content)) return msg;
@@ -237,13 +241,8 @@ export async function POST(req: Request) {
             const p = part as unknown as Record<string, unknown>;
             if (p['type'] !== 'file' || typeof p['data'] !== 'string') return part;
             const data = p['data'] as string;
-            if (data.startsWith('https://') || data.startsWith('http://')) {
-              return { ...p, data: new URL(data) };
-            }
-            if (data.startsWith('data:')) {
-              // Extract raw base64 portion after the comma
-              return { ...p, data: data.split(',')[1] ?? '' };
-            }
+            if (data.startsWith('https://') || data.startsWith('http://')) return { ...p, data: new URL(data) };
+            if (data.startsWith('data:')) return { ...p, data: data.split(',')[1] ?? '' };
             return part;
           }),
         };
@@ -345,52 +344,46 @@ EPL (soccer_epl), La Liga (soccer_spain_la_liga), Bundesliga (soccer_germany_bun
       });
 
       return result.toUIMessageStreamResponse({
-        onFinish: async ({ messages }) => {
+        onFinish: async ({ messages: finishedMessages }) => {
           clearTimeout(timeoutId);
-          // ... Persistence logic remains the same (secure and good)
-          const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-          const assistantMessage = messages.filter(m => m.role === 'assistant').pop();
+
+          const lastUserMessage  = finishedMessages.filter(m => m.role === 'user').pop();
+          const assistantMessage = finishedMessages.filter(m => m.role === 'assistant').pop();
 
           if (lastUserMessage && assistantMessage) {
-            // Extract text from parts array, handling both text and image types
             const extractText = (parts: unknown): string => {
               if (!Array.isArray(parts)) return '';
-              return parts
-                .filter(isTextPart)
-                .map((p) => p.text || '')
-                .join('');
+              return parts.filter(isTextPart).map(p => p.text || '').join('');
             };
 
-            const prompt = extractText(lastUserMessage.parts);
+            const prompt   = extractText(lastUserMessage.parts);
             const response = extractText(assistantMessage.parts);
 
-            const { error } = await supabase.from('chat_history').insert({
-              user_id: 'guest',
-              prompt,
-              response,
-            });
-
-            if (error) {
-              console.error('Supabase persistence error:', error);
-            }
+            // Save chat history + increment usage in parallel
+            await Promise.all([
+              supabaseAdmin.from('chat_history').insert({
+                user_id: user.id,
+                prompt,
+                response,
+              }),
+              supabaseAdmin
+                .from('profiles')
+                .update({ analyses_count: profile!.analyses_count + 1 })
+                .eq('id', user.id),
+            ]);
           }
         },
       });
     } catch (streamError: unknown) {
       clearTimeout(timeoutId);
-      // ... Error handling remains robust with proper narrowing
-      if (streamError instanceof Error) {
-        if (streamError.name === 'AbortError') {
-          return new Response('Request timeout. Please try again.', { status: 408 });
-        }
+      if (streamError instanceof Error && streamError.name === 'AbortError') {
+        return new Response('Request timeout. Please try again.', { status: 408 });
       }
       throw streamError;
     }
   } catch (error: unknown) {
-    // ... Global error handling remains the same, but narrow the unknown
-    const err = error;
-    console.error('Chat API error:', err);
-    const maybe = err as { message?: string };
+    console.error('Chat API error:', error);
+    const maybe = error as { message?: string };
     if (typeof maybe.message === 'string' && maybe.message.includes('API key')) {
       return new Response('API configuration error. Please contact support.', { status: 500 });
     }
