@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageToggle from '@/components/LanguageToggle';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -13,6 +15,7 @@ export default function LoginPage() {
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
 
+  const { tr } = useLanguage();
   const supabase = createClient();
   const router   = useRouter();
 
@@ -36,15 +39,15 @@ export default function LoginPage() {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw error;
-        setSuccess('Έλεγξε το email σου — σου στείλαμε σύνδεσμο επιβεβαίωσης.');
+        setSuccess(tr.login.successSignup);
       }
     } catch (err: unknown) {
-      const raw = err instanceof Error ? err.message : 'Κάτι πήγε στραβά';
+      const raw = err instanceof Error ? err.message : tr.login.errDefault;
       setError(
         raw === 'Invalid login credentials'
-          ? 'Λάθος email ή κωδικός.'
+          ? tr.login.errCredentials
           : raw === 'User already registered'
-          ? 'Αυτό το email χρησιμοποιείται ήδη. Σύνδεσε για να μπεις.'
+          ? tr.login.errAlreadyRegistered
           : raw
       );
     } finally {
@@ -63,6 +66,11 @@ export default function LoginPage() {
       className="min-h-dvh flex flex-col items-center justify-center app-bg app-grid px-4"
       style={{ color: 'var(--text-1)' }}
     >
+      {/* Language toggle — top right */}
+      <div className="absolute top-4 right-4">
+        <LanguageToggle />
+      </div>
+
       {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div
@@ -79,7 +87,7 @@ export default function LoginPage() {
                    className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-extrabold text-gradient tracking-tight">RiskRadar AI</h1>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>AI Risk Radar για Στοιχήματα</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>{tr.login.subtitle}</p>
         </div>
 
         {/* Card */}
@@ -99,7 +107,7 @@ export default function LoginPage() {
                     : { color: 'var(--text-4)' }
                 }
               >
-                {m === 'signin' ? 'Σύνδεση' : 'Εγγραφή'}
+                {m === 'signin' ? tr.login.tabSignin : tr.login.tabSignup}
               </button>
             ))}
           </div>
@@ -123,7 +131,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-3)' }}>
-                Κωδικός
+                {tr.login.labelPassword}
               </label>
               <input
                 type="password"
@@ -132,7 +140,7 @@ export default function LoginPage() {
                 required
                 minLength={6}
                 autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                placeholder="Τουλάχιστον 6 χαρακτήρες"
+                placeholder={tr.login.placeholderPassword}
                 style={{ fontSize: '16px' }}
                 className="w-full px-4 py-3 rounded-xl input-field"
               />
@@ -158,16 +166,16 @@ export default function LoginPage() {
               className="w-full py-3 rounded-xl font-bold text-sm btn-primary disabled:opacity-50 transition-opacity"
             >
               {loading
-                ? 'Φόρτωση…'
+                ? tr.login.btnLoading
                 : mode === 'signin'
-                ? 'Σύνδεση'
-                : 'Δημιουργία Λογαριασμού'}
+                ? tr.login.btnSignin
+                : tr.login.btnSignup}
             </button>
           </form>
         </div>
 
         <p className="text-center text-xs mt-4" style={{ color: 'var(--text-4)' }}>
-          5 δωρεάν αναλύσεις ανά μήνα · Premium σύντομα
+          {tr.login.footer}
         </p>
       </div>
     </div>

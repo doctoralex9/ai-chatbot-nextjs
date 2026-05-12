@@ -226,7 +226,7 @@ export async function POST(req: Request) {
     }
 
     // ── 3. Parse request body ───────────────────────────────────────────────
-    const { messages }: { messages: UIMessage[] } = await req.json();
+    const { messages, lang }: { messages: UIMessage[]; lang?: string } = await req.json();
 
     const controller = new AbortController();
     const timeoutId  = setTimeout(() => controller.abort(), 55000);
@@ -253,9 +253,9 @@ export async function POST(req: Request) {
         messages: modelMessages,
         abortSignal: controller.signal,
 
-        system: `ΓΛΩΣΣΑ: Απαντάς ΠΑΝΤΑ στα Ελληνικά. Μηδέν αγγλικοί όροι ορολογίας — ούτε "EV", ούτε "Kelly", ούτε "devigged", ούτε "overround". Μόνο απλά ελληνικά.
-
-Είσαι το RiskRadar AI — ο έξυπνος φίλος που ξέρει από στοιχήματα. Μιλάς σαν άνθρωπος που έχει δει πολλά δελτία, λες ευθέως την άποψή σου, και πάντα προτείνεις κάτι συγκεκριμένο και καλύτερο. Δεν μπλοκάρεις — αναλύεις και κατευθύνεις.
+        system: `${lang === 'en'
+          ? 'LANGUAGE: Always respond in ENGLISH. Use English labels in your response format (e.g. "Recommendation:" not "Σύσταση:", "Risk Level" not "ΕΠΙΠΕΔΟ ΡΙΣΚΟΥ", "Smart Tip" not "Έξυπνη Συμβουλή", "Potential win:" not "Πιθανό κέρδος:").\n\n'
+          : 'ΓΛΩΣΣΑ: Απαντάς ΠΑΝΤΑ στα Ελληνικά. Μηδέν αγγλικοί όροι ορολογίας — ούτε "EV", ούτε "Kelly", ούτε "devigged", ούτε "overround". Μόνο απλά ελληνικά.\n\n'}Είσαι το RiskRadar AI — ο έξυπνος φίλος που ξέρει από στοιχήματα. Μιλάς σαν άνθρωπος που έχει δει πολλά δελτία, λες ευθέως την άποψή σου, και πάντα προτείνεις κάτι συγκεκριμένο και καλύτερο. Δεν μπλοκάρεις — αναλύεις και κατευθύνεις.
 
 ## ΜΟΡΦΗ ΑΝΑΛΥΣΗΣ
 Όταν έχεις αποτελέσματα εργαλείου, χρησιμοποίησε ΠΑΝΤΑ αυτή τη δομή:

@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { cookies } from "next/headers";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import type { Lang } from "@/lib/i18n";
 import "./globals.css";
 
 /**
@@ -101,19 +104,24 @@ export const viewport: Viewport = {
  * - Performance optimizations (font-display swap)
  * - Accessibility features (lang attribute, antialiased text)
  */
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+  const cookieStore = await cookies();
+  const rawLang = cookieStore.get('rr-lang')?.value;
+  const initialLang: Lang = rawLang === 'en' ? 'en' : 'el';
 
+  return (
+    <html lang={initialLang === 'el' ? 'el' : 'en'} className="dark" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ fontFamily: 'var(--font-inter), var(--font-geist-sans), system-ui' }}
       >
-        {children}
+        <LanguageProvider initialLang={initialLang}>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

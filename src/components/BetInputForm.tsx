@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface BetFormData {
   odds: string;
@@ -15,6 +16,7 @@ interface BetInputFormProps {
 }
 
 export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFormProps) {
+  const { tr } = useLanguage();
   const [formData, setFormData] = useState<BetFormData>({ odds: '', stake: '', teams: '', bankroll: '' });
   const [showForm, setShowForm] = useState(false);
   const [errors, setErrors]     = useState<Partial<Record<keyof BetFormData, string>>>({});
@@ -29,9 +31,9 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
 
   const validate = (): boolean => {
     const next: Partial<Record<keyof BetFormData, string>> = {};
-    if (!formData.teams.trim()) next.teams = 'Υποχρεωτικό';
-    if (!formData.odds.trim())  next.odds  = 'Υποχρεωτικό';
-    if (!formData.stake.trim()) next.stake = 'Υποχρεωτικό';
+    if (!formData.teams.trim()) next.teams = tr.betFormRequired;
+    if (!formData.odds.trim())  next.odds  = tr.betFormRequired;
+    if (!formData.stake.trim()) next.stake = tr.betFormRequired;
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -77,7 +79,7 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
-        {showForm ? 'Κλείσιμο' : 'Ανάλυση Στοιχήματος'}
+        {showForm ? tr.betFormClose : tr.betFormOpen}
       </button>
 
       {/* Form panel */}
@@ -85,21 +87,18 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
         <form
           onSubmit={handleSubmit}
           className="mt-3 p-4 rounded-xl space-y-3 message-appear"
-          style={{
-            background: '#0d0d0d',
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}
+          style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)' }}
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.18em]"
              style={{ color: 'rgba(255,255,255,0.25)' }}>
-            Στοιχεία Στοιχήματος
+            {tr.betFormSection}
           </p>
 
           {/* Matchup */}
           <div>
             <label className="block text-xs font-semibold mb-1.5"
                    style={{ color: 'rgba(255,255,255,0.6)' }}>
-              Αγώνας
+              {tr.betFormMatch}
             </label>
             <input
               type="text"
@@ -117,14 +116,14 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
             <div>
               <label className="block text-xs font-semibold mb-1.5"
                      style={{ color: 'rgba(255,255,255,0.55)' }}>
-                Αποδόσεις
+                {tr.betFormOdds}
               </label>
               <input
                 type="text"
                 name="odds"
                 value={formData.odds}
                 onChange={handleChange}
-                placeholder="2.50 ή -110"
+                placeholder="2.50 or -110"
                 className={`w-full px-3 py-2.5 rounded-lg text-sm input-field ${errors.odds ? 'border-red-500/50' : ''}`}
               />
               {errors.odds && <p className="mt-1 text-[10px]" style={{ color: 'var(--red)' }}>{errors.odds}</p>}
@@ -134,7 +133,7 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
             <div>
               <label className="block text-xs font-semibold mb-1.5"
                      style={{ color: 'rgba(255,255,255,0.55)' }}>
-                Ποσό (€)
+                {tr.betFormStake}
               </label>
               <input
                 type="number"
@@ -153,8 +152,8 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
             <div className="col-span-2">
               <label className="block text-xs font-semibold mb-1.5"
                      style={{ color: 'rgba(255,255,255,0.55)' }}>
-                Bankroll (€){' '}
-                <span className="font-normal" style={{ color: 'rgba(255,255,255,0.22)' }}>— Προαιρετικό</span>
+                {tr.betFormBankroll}{' '}
+                <span className="font-normal" style={{ color: 'rgba(255,255,255,0.22)' }}>{tr.betFormOptional}</span>
               </label>
               <input
                 type="number"
@@ -182,10 +181,10 @@ export default function BetInputForm({ onSubmit, isLoading = false }: BetInputFo
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Ανάλυση Ρίσκου…
+                {tr.betFormLoading}
               </span>
             ) : (
-              'Ανάλυση Ρίσκου & EV →'
+              tr.betFormSubmit
             )}
           </button>
         </form>

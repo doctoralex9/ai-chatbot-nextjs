@@ -1,14 +1,16 @@
 'use client';
 
 import { useChat, UIMessage } from '@ai-sdk/react';
-import { FileUIPart } from 'ai';
+import { FileUIPart, DefaultChatTransport } from 'ai';
 import { useRef, useEffect, useState, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Loading from './Loader';
 import ChatMessage from '@/components/ChatMessage';
 import BetInputForm from '@/components/BetInputForm';
+import LanguageToggle from '@/components/LanguageToggle';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type MessagePart =
   | { type: 'text'; text: string }
@@ -33,14 +35,6 @@ const convertToMessagePart = (part: unknown): MessagePart | null => {
   return null;
 };
 
-const QUICK_ACTIONS = [
-  { label: 'Ανάλυση Στοιχήματος', message: 'Θέλω να αναλύσω ένα στοίχημα που σκέφτομαι. Μπορείς να με καθοδηγήσεις στο ρίσκο, EV και αν αξίζει να το παίξω;' },
-  { label: 'Έλεγχος Ρίσκου',      message: 'Ποιοι είναι οι βασικοί παράγοντες ρίσκου που πρέπει να ελέγξω πριν παίξω οποιοδήποτε στοίχημα; Να είσαι ειλικρινής.' },
-  { label: 'Bankroll Συμβουλές',  message: 'Βάσει της σωστής διαχείρισης bankroll, τι ποσοστό πρέπει να ρισκάρω ανά στοίχημα και γιατί;' },
-  { label: 'Έλεγχος Ζημιών',      message: 'Νιώθω ότι κυνηγάω τις ζημιές μου. Βοήθησέ με να αξιολογήσω την κατάσταση και πες μου αν πρέπει να σταματήσω.' },
-  { label: 'Υπολογισμός EV',      message: 'Εξήγησέ μου τι είναι το expected value στα στοιχήματα και βοήθησέ με να υπολογίσω αν ένα στοίχημα έχει θετικό ή αρνητικό EV.' },
-];
-
 const PARTICLES = [
   { left: '12%', delay: '0s',   dur: '3.2s', size: 2 },
   { left: '28%', delay: '0.6s', dur: '4.1s', size: 3 },
@@ -53,16 +47,16 @@ const PARTICLES = [
 const FREE_LIMIT = 5;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
-function validateImageFile(file: File): string | null {
-  const isHeic = /heic|heif/i.test(file.type) || /\.heic$/i.test(file.name);
-  if (isHeic) return 'Το HEIC δεν υποστηρίζεται. Στο iPhone: πάτα Κοινοποίηση → "Αποθήκευση ως JPEG" και δοκίμασε ξανά.';
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) return 'Χρησιμοποίησε JPEG, PNG, GIF ή WebP.';
-  if (file.size > 10 * 1024 * 1024)
-    return `Η εικόνα είναι πολύ μεγάλη (${(file.size / 1024 / 1024).toFixed(1)} MB). Μέγιστο 10 MB.`;
-  return null;
-}
+const FEATURE_ICONS = [
+  <svg key="risk" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+  <svg key="bankroll" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>,
+  <svg key="shield" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+  <svg key="honesty" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+];
 
 export default function Chatbot() {
+  const { tr } = useLanguage();
+
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [userEmail, setUserEmail]               = useState('');
   const [usageCount, setUsageCount]             = useState(0);
@@ -83,9 +77,28 @@ export default function Chatbot() {
   const supabase = createClient();
   const router   = useRouter();
 
+  const { lang } = useLanguage();
+  const langRef = useRef(lang);
+  langRef.current = lang;
+
+  const [transport] = useState(() => new DefaultChatTransport({
+    api: '/api/chat',
+    body: () => ({ lang: langRef.current }),
+  }));
+
   const { messages, setMessages, sendMessage, status, error, stop } = useChat({
+    transport,
     onError: (err) => console.error('[useChat error]', err),
   });
+
+  const validateImageFile = (file: File): string | null => {
+    const isHeic = /heic|heif/i.test(file.type) || /\.heic$/i.test(file.name);
+    if (isHeic) return tr.heicError;
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) return tr.imageTypeError;
+    if (file.size > 10 * 1024 * 1024)
+      return tr.imageSizeError((file.size / 1024 / 1024).toFixed(1));
+    return null;
+  };
 
   // ── Auth + history load ────────────────────────────────────────────────────
   useEffect(() => {
@@ -95,7 +108,6 @@ export default function Chatbot() {
 
       setUserEmail(user.email ?? '');
 
-      // Load usage
       const usageRes = await fetch('/api/usage');
       if (usageRes.ok) {
         const usage = await usageRes.json() as { count: number; limit: number; resetAt: string };
@@ -103,7 +115,6 @@ export default function Chatbot() {
         setUsageResetAt(usage.resetAt);
       }
 
-      // Load chat history for this user
       const { createClient: createAdminBrowser } = await import('@supabase/supabase-js');
       const sb = createAdminBrowser(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -289,9 +300,8 @@ export default function Chatbot() {
   const isDisabled = isStreaming || isUploadingAttachment;
   const hasNoVisibleMessages = messages.every(msg => msg.parts.every(p => convertToMessagePart(p) === null));
 
-  // Format reset date
   const resetDateLabel = usageResetAt
-    ? new Date(usageResetAt).toLocaleDateString('el-GR', { day: 'numeric', month: 'long' })
+    ? new Date(usageResetAt).toLocaleDateString(tr.dateLocale, { day: 'numeric', month: 'long' })
     : '';
 
   return (
@@ -315,25 +325,22 @@ export default function Chatbot() {
           >
             <div className="text-4xl mb-4">⛔</div>
             <h2 className="text-xl font-extrabold text-gradient mb-2 tracking-tight">
-              Έφτασες το μηνιαίο όριο
+              {tr.paywallTitle}
             </h2>
             <p className="text-sm mb-5 leading-relaxed" style={{ color: 'var(--text-3)' }}>
-              Χρησιμοποίησες <strong style={{ color: 'var(--text-1)' }}>{usageCount}/{FREE_LIMIT}</strong> δωρεάν αναλύσεις αυτό τον μήνα.
+              {tr.paywallUsed(usageCount, FREE_LIMIT)}
             </p>
 
-            {/* Progress bar */}
             <div className="w-full h-1.5 rounded-full mb-5" style={{ background: 'var(--border-2)' }}>
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: '100%', background: 'var(--red)' }}
-              />
+              <div className="h-full rounded-full transition-all"
+                   style={{ width: '100%', background: 'var(--red)' }} />
             </div>
 
             {resetDateLabel && (
               <div className="mb-6 px-4 py-3 rounded-xl"
                    style={{ background: 'var(--amber-dim)', border: '1px solid var(--amber-border)' }}>
                 <p className="text-xs" style={{ color: 'var(--amber)' }}>
-                  Ανανεώνεται στις <strong>{resetDateLabel}</strong>
+                  {tr.paywallResetsOn} <strong>{resetDateLabel}</strong>
                 </p>
               </div>
             )}
@@ -342,10 +349,10 @@ export default function Chatbot() {
               <div className="p-4 rounded-xl text-left"
                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-3)' }}>
                 <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-2)' }}>
-                  🚀 Premium — Σύντομα
+                  {tr.paywallPremiumTitle}
                 </p>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--text-4)' }}>
-                  Απεριόριστες αναλύσεις, ειδοποιήσεις ρίσκου σε πραγματικό χρόνο &amp; πολλά ακόμα
+                  {tr.paywallPremiumDesc}
                 </p>
               </div>
               <button
@@ -353,7 +360,7 @@ export default function Chatbot() {
                 className="w-full py-2.5 rounded-xl text-sm font-semibold transition-colors"
                 style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-3)' }}
               >
-                Κλείσιμο
+                {tr.paywallClose}
               </button>
             </div>
           </div>
@@ -388,9 +395,9 @@ export default function Chatbot() {
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white mb-2">Άφεσε για Ανάλυση</p>
+              <p className="text-2xl font-bold text-white mb-2">{tr.dragTitle}</p>
               <p className="text-sm max-w-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                Άφεσε το στιγμιότυπο του δελτίου σου για άμεση ανάλυση AI
+                {tr.dragSubtitle}
               </p>
             </div>
             <div className="flex gap-2 flex-wrap justify-center">
@@ -429,6 +436,9 @@ export default function Chatbot() {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Language toggle */}
+          <LanguageToggle />
+
           {/* Usage counter pill */}
           <button
             onClick={() => usageCount >= FREE_LIMIT && setShowPaywall(true)}
@@ -438,7 +448,7 @@ export default function Chatbot() {
                 ? { background: 'var(--red-dim)', border: '1px solid var(--red-border)', color: 'var(--red)' }
                 : { background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-2)', color: 'var(--text-3)' }
             }
-            title={`${usageCount}/${FREE_LIMIT} αναλύσεις αυτό τον μήνα`}
+            title={tr.usageTitle(usageCount, FREE_LIMIT)}
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -450,7 +460,7 @@ export default function Chatbot() {
                style={{ background: 'var(--green-dim)', border: '1px solid var(--green-border)', color: 'var(--green)' }}>
             <span className="w-1.5 h-1.5 rounded-full"
                   style={{ background: 'var(--green)', animation: 'status-pulse 2.5s ease-in-out infinite' }} />
-            Ζωντανά
+            {tr.live}
           </div>
 
           {/* Logout button */}
@@ -460,8 +470,8 @@ export default function Chatbot() {
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-2)', color: 'var(--text-4)' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(248,113,113,0.08)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; }}
-            aria-label="Αποσύνδεση"
-            title={`Αποσύνδεση (${userEmail})`}
+            aria-label={tr.signout}
+            title={`${tr.signout} (${userEmail})`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -504,19 +514,14 @@ export default function Chatbot() {
                 RiskRadar AI
               </h2>
               <p className="text-sm max-w-sm mb-8 leading-relaxed" style={{ color: 'var(--text-3)' }}>
-                Δεν κάνει προβλέψεις. Σε αναλύει με δεδομένα και σου λέει πότε να σταματήσεις — πριν χάσεις.
+                {tr.emptyDesc}
               </p>
 
               <div className="grid grid-cols-2 gap-3 w-full max-w-xs sm:max-w-sm mb-7">
-                {[
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, title: 'Ανάλυση Ρίσκου', desc: 'EV & πιθανότητες', delay: '0.05s' },
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>, title: 'Διαχείριση Bankroll', desc: 'Σωστό μέγεθος στοιχήματος', delay: '0.1s' },
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, title: 'Προστασία Bankroll', desc: 'Αποφυγή μεγάλων ζημιών', delay: '0.15s' },
-                  { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>, title: 'Απόλυτη Ειλικρίνεια', desc: 'Αλήθεια, χωρίς υπεσχέσεις', delay: '0.2s' },
-                ].map(f => (
+                {tr.features.map((f, i) => (
                   <div key={f.title} className="card p-3 text-left reveal-up hover:scale-[1.03]"
-                       style={{ animationDelay: f.delay, transition: 'all 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
-                    <div className="mb-2" style={{ color: 'var(--text-3)' }}>{f.icon}</div>
+                       style={{ animationDelay: `${0.05 + i * 0.05}s`, transition: 'all 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
+                    <div className="mb-2" style={{ color: 'var(--text-3)' }}>{FEATURE_ICONS[i]}</div>
                     <div className="text-xs font-bold" style={{ color: 'var(--text-1)' }}>{f.title}</div>
                     <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-4)' }}>{f.desc}</div>
                   </div>
@@ -525,10 +530,10 @@ export default function Chatbot() {
 
               <p className="text-[11px] mb-3 px-4 py-2 rounded-full"
                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }}>
-                ↑ σύρε &amp; άφεσε ένα δελτίο οπουδήποτε για άμεση ανάλυση
+                {tr.dragHint}
               </p>
               <p className="text-xs" style={{ color: 'var(--text-4)' }}>
-                Χρησιμοποίησε τις γρήγορες επιλογές ή περίγραψε ένα στοίχημα
+                {tr.quickHint}
               </p>
             </div>
           )}
@@ -553,7 +558,7 @@ export default function Chatbot() {
           {isStreaming && (
             <div className="flex items-end gap-2.5 message-appear">
               <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 avatar-ring">
-                <Image src="/botavatar.jpg" alt="Σκέφτομαι…" width={28} height={28}
+                <Image src="/botavatar.jpg" alt="…" width={28} height={28}
                        className="w-full h-full object-cover" />
               </div>
               <div className="px-4 py-3 rounded-2xl rounded-bl-sm"
@@ -570,7 +575,7 @@ export default function Chatbot() {
           {isUploadingAttachment && !isStreaming && (
             <div className="flex items-end gap-2.5 message-appear">
               <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 avatar-ring">
-                <Image src="/useravatar.jpg" alt="Μεταφόρτωση" width={28} height={28}
+                <Image src="/useravatar.jpg" alt="" width={28} height={28}
                        className="w-full h-full object-cover" />
               </div>
               <div className="px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2"
@@ -580,7 +585,7 @@ export default function Chatbot() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                <span className="text-xs" style={{ color: 'var(--text-4)' }}>Μεταφόρτωση εικόνας…</span>
+                <span className="text-xs" style={{ color: 'var(--text-4)' }}>{tr.uploading}</span>
               </div>
             </div>
           )}
@@ -600,7 +605,7 @@ export default function Chatbot() {
             {/* Quick action chips */}
             <div className="px-4 pt-3 pb-0">
               <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
-                {QUICK_ACTIONS.map(action => (
+                {tr.quickActions.map(action => (
                   <button
                     key={action.label}
                     onClick={() => handleQuickAction(action.message)}
@@ -631,8 +636,8 @@ export default function Chatbot() {
                   clipRule="evenodd" />
               </svg>
               <p className="text-[10px] leading-snug" style={{ color: 'rgba(251,191,36,0.65)' }}>
-                <span className="font-bold" style={{ color: 'var(--amber)' }}>ΠΡΟΣΟΧΗ: </span>
-                Τα στοιχήματα εμπεριέχουν κίνδυνο. Μην ποντάρετε ποτέ περισσότερο από ό,τι μπορείτε να χάσετε.
+                <span className="font-bold" style={{ color: 'var(--amber)' }}>{tr.disclaimerLabel}</span>
+                {tr.disclaimerText}
               </p>
             </div>
 
@@ -640,7 +645,7 @@ export default function Chatbot() {
             {attachmentPreviewUrl && (
               <div className="mx-4 mb-2 rounded-xl overflow-hidden message-appear"
                    style={{ border: '1px solid var(--border-3)', background: '#0d0d0d' }}>
-                <Image src={attachmentPreviewUrl} alt="Προεπισκόπηση στιγμιότυπου"
+                <Image src={attachmentPreviewUrl} alt="preview"
                        width={400} height={300} unoptimized
                        className="w-full max-h-36 object-cover"
                        onError={() => { setUploadError('Could not preview this image.'); setAttachmentFile(null); }} />
@@ -650,13 +655,13 @@ export default function Chatbot() {
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      Στιγμιότυπο έτοιμο
+                      {tr.attachReady}
                     </span>
                     <button type="button" onClick={handleRemoveAttachment}
                             className="font-medium transition-colors" style={{ color: 'var(--text-4)' }}
                             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'}
                             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-4)'}>
-                      Αφαίρεση
+                      {tr.attachRemove}
                     </button>
                   </div>
                   <p className="px-3 pb-2 text-[10px] leading-snug flex items-start gap-1.5"
@@ -665,7 +670,7 @@ export default function Chatbot() {
                          style={{ color: 'var(--amber)' }}>
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
-                    Βεβαιώσου ότι φαίνονται καθαρά τα ματσ, οι αποδόσεις και το ποσό — χωρίς ειδοποιήσεις ή banner στην οθόνη.
+                    {tr.attachWarning}
                   </p>
                 </div>
               </div>
@@ -695,7 +700,7 @@ export default function Chatbot() {
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-3)', color: 'var(--text-3)' }}
                 onMouseEnter={e => { if (!isDisabled) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-1)'; } }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-3)'; }}
-                aria-label="Επισύναψη εικόνας"
+                aria-label={tr.attachAria}
               >
                 <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -713,8 +718,8 @@ export default function Chatbot() {
                   disabled={isDisabled}
                   placeholder={
                     usageCount >= FREE_LIMIT
-                      ? `Έφτασες το όριο (${usageCount}/${FREE_LIMIT}) — ανανεώνεται ${resetDateLabel}`
-                      : 'Ρώτησε για αποδόσεις, ρίξε ένα δελτίο ή περίγραψε ένα στοίχημα…'
+                      ? tr.inputPlaceholderLimit(usageCount, FREE_LIMIT, resetDateLabel)
+                      : tr.inputPlaceholder
                   }
                   rows={1}
                   style={{ fontSize: '16px' }}
@@ -729,7 +734,7 @@ export default function Chatbot() {
                   onClick={stop}
                   className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
                   style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff5050' }}
-                  aria-label="Διακοπή"
+                  aria-label={tr.stopAria}
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <rect x="6" y="6" width="12" height="12" rx="2" />
@@ -740,7 +745,7 @@ export default function Chatbot() {
                   type="submit"
                   disabled={isUploadingAttachment || (!input.trim() && !attachmentFile)}
                   className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center btn-primary"
-                  aria-label="Αποστολή μηνύματος"
+                  aria-label={tr.sendAria}
                 >
                   {isUploadingAttachment ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
