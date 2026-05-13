@@ -61,6 +61,7 @@ export default function Chatbot() {
   const [userEmail, setUserEmail]               = useState('');
   const [usageCount, setUsageCount]             = useState(0);
   const [usageResetAt, setUsageResetAt]         = useState('');
+  const [isSuperuser, setIsSuperuser]           = useState(false);
   const [showPaywall, setShowPaywall]           = useState(false);
   const [input, setInput]                       = useState('');
   const [attachmentFile, setAttachmentFile]     = useState<File | null>(null);
@@ -106,13 +107,24 @@ export default function Chatbot() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/login'); return; }
 
+      // Remember-me check: sign out if user opted out and this is a new browser session
+      const remembers = localStorage.getItem('rr-remember-me');
+      const tabActive = sessionStorage.getItem('rr-tab-session');
+      if (remembers === 'false' && !tabActive) {
+        await supabase.auth.signOut();
+        router.push('/login');
+        return;
+      }
+      sessionStorage.setItem('rr-tab-session', '1');
+
       setUserEmail(user.email ?? '');
 
       const usageRes = await fetch('/api/usage');
       if (usageRes.ok) {
-        const usage = await usageRes.json() as { count: number; limit: number; resetAt: string };
+        const usage = await usageRes.json() as { count: number; limit: number; resetAt: string; isSuperuser?: boolean };
         setUsageCount(usage.count);
         setUsageResetAt(usage.resetAt);
+        setIsSuperuser(usage.isSuperuser ?? false);
       }
 
       const { createClient: createAdminBrowser } = await import('@supabase/supabase-js');
@@ -147,9 +159,10 @@ export default function Chatbot() {
     if (status === 'ready' && userEmail) {
       fetch('/api/usage')
         .then(r => r.json())
-        .then((usage: { count: number; limit: number; resetAt: string }) => {
+        .then((usage: { count: number; limit: number; resetAt: string; isSuperuser?: boolean }) => {
           setUsageCount(usage.count);
           setUsageResetAt(usage.resetAt);
+          setIsSuperuser(usage.isSuperuser ?? false);
         })
         .catch(() => {});
     }
@@ -239,7 +252,7 @@ export default function Chatbot() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if ((input.trim().length === 0 && !attachmentFile) || status === 'streaming') return;
-    if (usageCount >= FREE_LIMIT) { setShowPaywall(true); return; }
+    if (usageCount >= FREE_LIMIT && !isSuperuser) { setShowPaywall(true); return; }
 
     const currentInput = input.trim();
     const currentFile  = attachmentFile;
@@ -268,7 +281,7 @@ export default function Chatbot() {
 
   const handleQuickAction = (message: string) => {
     if (status === 'streaming' || isUploadingAttachment) return;
-    if (usageCount >= FREE_LIMIT) { setShowPaywall(true); return; }
+    if (usageCount >= FREE_LIMIT && !isSuperuser) { setShowPaywall(true); return; }
     sendMessage({ text: message });
   };
 
@@ -288,7 +301,7 @@ export default function Chatbot() {
   };
 
   const handleBetSubmit = (betData: { odds: string; stake: string; teams: string; bankroll: string }) => {
-    if (usageCount >= FREE_LIMIT) { setShowPaywall(true); return; }
+    if (usageCount >= FREE_LIMIT && !isSuperuser) { setShowPaywall(true); return; }
     const betMessage = `Analyze this bet for me:\n- Teams: ${betData.teams}\n- Odds: ${betData.odds}\n- Stake: €${betData.stake}${betData.bankroll ? `\n- Bankroll: €${betData.bankroll}` : ''}`;
     sendMessage({ text: betMessage });
   };
@@ -440,21 +453,32 @@ export default function Chatbot() {
           <LanguageToggle />
 
           {/* Usage counter pill */}
-          <button
-            onClick={() => usageCount >= FREE_LIMIT && setShowPaywall(true)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors"
-            style={
-              usageCount >= FREE_LIMIT
-                ? { background: 'var(--red-dim)', border: '1px solid var(--red-border)', color: 'var(--red)' }
-                : { background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-2)', color: 'var(--text-3)' }
-            }
-            title={tr.usageTitle(usageCount, FREE_LIMIT)}
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            {usageCount}/{FREE_LIMIT}
-          </button>
+          {isSuperuser ? (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-2)', color: 'var(--text-3)' }}
+                 title="Superuser — unlimited">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              ∞
+            </div>
+          ) : (
+            <button
+              onClick={() => usageCount >= FREE_LIMIT && setShowPaywall(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors"
+              style={
+                usageCount >= FREE_LIMIT
+                  ? { background: 'var(--red-dim)', border: '1px solid var(--red-border)', color: 'var(--red)' }
+                  : { background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-2)', color: 'var(--text-3)' }
+              }
+              title={tr.usageTitle(usageCount, FREE_LIMIT)}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              {usageCount}/{FREE_LIMIT}
+            </button>
+          )}
 
           <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
                style={{ background: 'var(--green-dim)', border: '1px solid var(--green-border)', color: 'var(--green)' }}>
@@ -640,6 +664,55 @@ export default function Chatbot() {
                 {tr.disclaimerText}
               </p>
             </div>
+
+            {/* ── GPT-style limit notice ───────────────────────────────── */}
+            {usageCount >= FREE_LIMIT && !isSuperuser && (
+              <div className="mx-4 mb-3 message-appear">
+                <div style={{
+                  background: 'rgba(10,10,10,0.82)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255,255,255,0.09)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                }}>
+                  {/* Subtle top gradient line */}
+                  <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.13), transparent)' }} />
+
+                  <div style={{ padding: '16px 18px 14px' }}>
+                    {/* Icon + text row */}
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center mt-0.5"
+                           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}
+                             style={{ color: 'rgba(255,255,255,0.55)' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold leading-snug" style={{ color: 'var(--text-1)' }}>
+                          {tr.paywallTitle}
+                        </p>
+                        <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-3)' }}>
+                          {tr.paywallUsed(usageCount, FREE_LIMIT)}
+                          {resetDateLabel && <> {tr.paywallResetsOn} <strong style={{ color: 'var(--text-2)' }}>{resetDateLabel}</strong>.</>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Premium pill */}
+                    <div className="mt-3 px-3 py-2.5 rounded-xl"
+                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <p className="text-[11px] leading-snug" style={{ color: 'var(--text-4)' }}>
+                        <span style={{ color: 'var(--text-3)' }}>{tr.paywallPremiumTitle}</span>
+                        {' — '}{tr.paywallPremiumDesc}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Attachment preview */}
             {attachmentPreviewUrl && (

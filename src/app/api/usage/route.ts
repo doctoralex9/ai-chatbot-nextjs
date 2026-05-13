@@ -4,6 +4,9 @@ import { cookies } from 'next/headers';
 
 const FREE_LIMIT = 5;
 
+const SUPERUSER_EMAILS = (process.env.SUPERUSER_EMAIL ?? '')
+  .split(',').map(e => e.trim()).filter(Boolean);
+
 export async function GET() {
   const cookieStore = await cookies();
 
@@ -22,6 +25,10 @@ export async function GET() {
 
   const { data: { user } } = await supabaseAuth.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  if (SUPERUSER_EMAILS.includes(user.email ?? '')) {
+    return Response.json({ count: 0, limit: FREE_LIMIT, resetAt: '', isSuperuser: true });
+  }
 
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,7 +53,7 @@ export async function GET() {
   const resetAt = new Date(profile.analyses_reset_at);
   const count = now > resetAt ? 0 : profile.analyses_count;
 
-  return Response.json({ count, limit: FREE_LIMIT, resetAt: profile.analyses_reset_at });
+  return Response.json({ count, limit: FREE_LIMIT, resetAt: profile.analyses_reset_at, isSuperuser: false });
 }
 
 function getNextMonthStart(): string {

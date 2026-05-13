@@ -8,6 +8,9 @@ import { analyzeBet } from '@/lib/betAnalysis';
 
 const FREE_LIMIT = 5;
 
+const SUPERUSER_EMAILS = (process.env.SUPERUSER_EMAIL ?? '')
+  .split(',').map(e => e.trim()).filter(Boolean);
+
 const isTextPart = (part: unknown): part is { type: 'text'; text?: string } =>
   typeof part === 'object' && part !== null && (part as { type?: string }).type === 'text';
 
@@ -191,38 +194,44 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabaseAuth.auth.getUser();
     if (!user) return new Response('Unauthorized', { status: 401 });
 
+    const isSuperuser = SUPERUSER_EMAILS.includes(user.email ?? '');
+
     // ── 2. Check + enforce monthly usage limit ──────────────────────────────
-    let { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('analyses_count, analyses_reset_at')
-      .eq('id', user.id)
-      .single();
+    let profile: { analyses_count: number; analyses_reset_at: string } | null = null;
 
-    if (!profile) {
-      // Auto-create profile if missing (e.g. user signed up before trigger was added)
-      const nextReset = getNextMonthStart();
-      await supabaseAdmin.from('profiles').insert({ id: user.id, analyses_count: 0, analyses_reset_at: nextReset });
-      profile = { analyses_count: 0, analyses_reset_at: nextReset };
-    }
-
-    const now     = new Date();
-    const resetAt = new Date(profile.analyses_reset_at);
-
-    if (now > resetAt) {
-      // Reset counter for new month
-      const nextReset = getNextMonthStart();
-      await supabaseAdmin
+    if (!isSuperuser) {
+      const { data } = await supabaseAdmin
         .from('profiles')
-        .update({ analyses_count: 0, analyses_reset_at: nextReset })
-        .eq('id', user.id);
-      profile = { analyses_count: 0, analyses_reset_at: nextReset };
-    }
+        .select('analyses_count, analyses_reset_at')
+        .eq('id', user.id)
+        .single();
 
-    if (profile.analyses_count >= FREE_LIMIT) {
-      return Response.json(
-        { code: 'LIMIT_REACHED', resetAt: profile.analyses_reset_at, limit: FREE_LIMIT },
-        { status: 429 }
-      );
+      profile = data;
+
+      if (!profile) {
+        const nextReset = getNextMonthStart();
+        await supabaseAdmin.from('profiles').insert({ id: user.id, analyses_count: 0, analyses_reset_at: nextReset });
+        profile = { analyses_count: 0, analyses_reset_at: nextReset };
+      }
+
+      const now     = new Date();
+      const resetAt = new Date(profile.analyses_reset_at);
+
+      if (now > resetAt) {
+        const nextReset = getNextMonthStart();
+        await supabaseAdmin
+          .from('profiles')
+          .update({ analyses_count: 0, analyses_reset_at: nextReset })
+          .eq('id', user.id);
+        profile = { analyses_count: 0, analyses_reset_at: nextReset };
+      }
+
+      if (profile.analyses_count >= FREE_LIMIT) {
+        return Response.json(
+          { code: 'LIMIT_REACHED', resetAt: profile.analyses_reset_at, limit: FREE_LIMIT },
+          { status: 429 }
+        );
+      }
     }
 
     // ── 3. Parse request body ───────────────────────────────────────────────
@@ -359,18 +368,14 @@ EPL (soccer_epl), La Liga (soccer_spain_la_liga), Bundesliga (soccer_germany_bun
             const prompt   = extractText(lastUserMessage.parts);
             const response = extractText(assistantMessage.parts);
 
-            // Save chat history + increment usage in parallel
-            await Promise.all([
-              supabaseAdmin.from('chat_history').insert({
-                user_id: user.id,
-                prompt,
-                response,
-              }),
-              supabaseAdmin
+            // Save chat history; increment usage only for non-superusers
+            await supabaseAdmin.from('chat_history').insert({ user_id: user.id, prompt, response });
+            if (!isSuperuser && profile) {
+              await supabaseAdmin
                 .from('profiles')
-                .update({ analyses_count: profile!.analyses_count + 1 })
-                .eq('id', user.id),
-            ]);
+                .update({ analyses_count: profile.analyses_count + 1 })
+                .eq('id', user.id);
+            }
           }
         },
       });

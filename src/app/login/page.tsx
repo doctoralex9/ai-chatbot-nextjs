@@ -9,8 +9,11 @@ import LanguageToggle from '@/components/LanguageToggle';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [rememberMe, setRememberMe] = useState(() =>
+    typeof window !== 'undefined' ? localStorage.getItem('rr-remember-me') !== 'false' : true
+  );
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
@@ -30,6 +33,8 @@ export default function LoginPage() {
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        localStorage.setItem('rr-remember-me', rememberMe ? 'true' : 'false');
+        sessionStorage.setItem('rr-tab-session', '1');
         router.push('/');
         router.refresh();
       } else {
@@ -145,6 +150,27 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 rounded-xl input-field"
               />
             </div>
+
+            {/* Remember me — only shown on sign-in */}
+            {mode === 'signin' && (
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <div
+                  onClick={() => setRememberMe(v => !v)}
+                  className="relative flex-shrink-0 w-4 h-4 rounded transition-all duration-150"
+                  style={{
+                    background: rememberMe ? 'var(--text-1)' : 'transparent',
+                    border: `1.5px solid ${rememberMe ? 'var(--text-1)' : 'rgba(255,255,255,0.2)'}`,
+                  }}
+                >
+                  {rememberMe && (
+                    <svg className="absolute inset-0 w-full h-full p-[2px]" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-xs" style={{ color: 'var(--text-3)' }}>{tr.login.rememberMe}</span>
+              </label>
+            )}
 
             {error && (
               <div className="px-4 py-3 rounded-xl text-xs"
