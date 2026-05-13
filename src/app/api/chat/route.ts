@@ -232,6 +232,12 @@ export async function POST(req: Request) {
           { status: 429 }
         );
       }
+
+      // Increment before streaming — avoids race with serverless onFinish
+      await supabaseAdmin
+        .from('profiles')
+        .update({ analyses_count: profile.analyses_count + 1 })
+        .eq('id', user.id);
     }
 
     // ── 3. Parse request body ───────────────────────────────────────────────
@@ -368,14 +374,7 @@ EPL (soccer_epl), La Liga (soccer_spain_la_liga), Bundesliga (soccer_germany_bun
             const prompt   = extractText(lastUserMessage.parts);
             const response = extractText(assistantMessage.parts);
 
-            // Save chat history; increment usage only for non-superusers
             await supabaseAdmin.from('chat_history').insert({ user_id: user.id, prompt, response });
-            if (!isSuperuser && profile) {
-              await supabaseAdmin
-                .from('profiles')
-                .update({ analyses_count: profile.analyses_count + 1 })
-                .eq('id', user.id);
-            }
           }
         },
       });
