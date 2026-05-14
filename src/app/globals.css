@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /* ══════════════════════════════════════════════════
-   WAGER WIZARD PRO — DESIGN SYSTEM v3
-   Monochrome luxury terminal aesthetic
+   RISKRADAR AI — DESIGN SYSTEM v4
+   Cyberpunk blueprint aesthetic · Orbitron + Inter
    ══════════════════════════════════════════════════ */
 
 :root {
@@ -54,10 +54,75 @@
   --font-mono: var(--font-geist-mono), 'Fira Code', monospace;
 
   /* ── Easing ───────────────────────────────────── */
-  --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-expo:   cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-snappy:   cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce:   cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-expo:     cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ══════════════════════════════════════════════
+     RISKRADAR AI — NEW UI TOKENS
+     Everything below drives the robot/chat layout.
+     Old tokens above remain for backward-compat
+     with components not yet rebuilt.
+     ══════════════════════════════════════════════ */
+
+  /* Backgrounds */
+  --color-bg:             #000000;
+  --color-bg-card:        rgba(18, 18, 18, 0.78);
+  --color-bg-card-hover:  rgba(28, 28, 28, 0.88);
+  --color-bg-input:       rgba(255, 255, 255, 0.06);
+  --color-bg-warning:     rgba(180, 130, 0, 0.18);
+
+  /* Grid overlay — the blueprint mesh */
+  --color-grid:           rgba(255, 255, 255, 0.055);
+
+  /* Ambient glow behind robot */
+  --color-glow-hero:      rgba(255, 255, 255, 0.16);
+
+  /* Text */
+  --color-text-primary:   #FFFFFF;
+  --color-text-secondary: #A0A0A0;
+  --color-text-muted:     #5A5A5A;
+  --color-text-warning:   #E6B800;
+
+  /* Borders */
+  --color-border:         rgba(255, 255, 255, 0.10);
+  --color-border-focus:   rgba(255, 255, 255, 0.35);
+  --color-border-warning: rgba(230, 184, 0, 0.55);
+
+  /* Buttons */
+  --color-btn-primary-bg: #FFFFFF;
+  --color-btn-primary-fg: #000000;
+
+  /* Status */
+  --color-live:           #22C55E;
+
+  /* Font families */
+  --font-display: var(--font-orbitron), 'Bebas Neue', monospace;
+  --font-sans:    var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+
+  /* Border radii */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-pill: 9999px;
+
+  /* Backdrop blurs */
+  --blur-card:  blur(14px);
+  --blur-input: blur(8px);
+  --blur-modal: blur(20px);
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
 }
 
 /* ── BASE RESET ──────────────────────────────────── */
@@ -212,6 +277,17 @@ body {
   5%   { opacity: 1; }
   95%  { opacity: 1; }
   100% { top: 100%; opacity: 0; }
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  50%       { opacity: 0.8; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+}
+
+/* Robot inhales/exhales while streaming a response */
+@keyframes breathing {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
 }
 
 /* ══════════════════════════════════════════════════
@@ -541,4 +617,260 @@ body {
 
 @media print {
   body { background: white; color: black; }
+}
+
+/* ══════════════════════════════════════════════════
+   BLUEPRINT GRID BACKGROUND
+   The 60×60 line grid that covers every page.
+   Applied on <body> so it works globally without
+   repeating the declaration in every page file.
+   ══════════════════════════════════════════════════ */
+
+.bg-grid {
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ══════════════════════════════════════════════════
+   HERO DECORATIVES
+   These sit inside RobotStage behind the robot image.
+   z-index 0 keeps them below the robot (z-index 1).
+   ══════════════════════════════════════════════════ */
+
+.hero-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 55% 60% at 50% 48%,
+    rgba(255,255,255,0.13) 0%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Dashed ring — visible as the circular outline behind the robot head */
+.hero-arc {
+  position: absolute;
+  width: min(640px, 56vw);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 1px dashed rgba(255,255,255,0.13);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -52%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ══════════════════════════════════════════════════
+   REPLY CARD  (AI messages — left column)
+   Deep frosted glass. Slight border brightens on
+   hover so cards feel alive without being distracting.
+   ══════════════════════════════════════════════════ */
+
+.reply-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: var(--blur-card);
+  -webkit-backdrop-filter: var(--blur-card);
+  padding: 16px 18px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.65;
+  transition: border-color 0.2s var(--ease-snappy);
+}
+.reply-card:hover { border-color: rgba(255,255,255,0.16); }
+
+/* ══════════════════════════════════════════════════
+   USER BUBBLE  (chat history — right column)
+   Slightly lighter than reply cards so the two sides
+   of the conversation are visually distinct.
+   ══════════════════════════════════════════════════ */
+
+.user-bubble {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  text-align: right;
+  margin-left: auto;
+  max-width: 90%;
+}
+
+/* ══════════════════════════════════════════════════
+   WARNING BANNER
+   Gold tint — must not read as an error (red),
+   just as a responsible reminder.
+   ══════════════════════════════════════════════════ */
+
+.warning-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 16px;
+  background: var(--color-bg-warning);
+  border: 1px solid var(--color-border-warning);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-warning);
+  letter-spacing: 0.02em;
+}
+
+/* ══════════════════════════════════════════════════
+   STATUS BAR
+   Fixed 32px strip at the very bottom of the viewport.
+   Lives above everything (z-index 100).
+   ══════════════════════════════════════════════════ */
+
+.status-bar-base {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: rgba(10, 10, 10, 0.92);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  gap: 20px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+/* The green pulsing dot next to "Ζωντανά" */
+.status-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-live);
+  animation: pulse-live 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════
+   INPUT FORM WRAPPER
+   Same frosted-glass family as cards so the bottom
+   bar feels part of the same design language.
+   ══════════════════════════════════════════════════ */
+
+.input-form-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(14, 14, 14, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  backdrop-filter: var(--blur-input);
+  -webkit-backdrop-filter: var(--blur-input);
+}
+
+/* Paperclip and send icon buttons inside the input bar */
+.input-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s var(--ease-snappy);
+}
+.input-icon-btn:hover { background: rgba(255,255,255,0.11); }
+
+/* ══════════════════════════════════════════════════
+   PILL BUTTONS  (new design system)
+   Full pill shape (9999px) to match TRONIX-5 reference.
+   --btn-pill-primary  → white bg, black text (login, CTA)
+   --btn-pill-outline  → transparent, white border (nav)
+   ══════════════════════════════════════════════════ */
+
+.btn-pill-primary {
+  background: var(--color-btn-primary-bg);
+  color: var(--color-btn-primary-fg);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 14px 32px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: opacity 0.2s var(--ease-snappy), transform 0.2s var(--ease-snappy);
+}
+.btn-pill-primary:hover  { opacity: 0.88; transform: scale(1.03); }
+.btn-pill-primary:active { opacity: 1;    transform: scale(0.98); }
+.btn-pill-primary:disabled { opacity: 0.32; cursor: not-allowed; transform: none; }
+
+.btn-pill-outline {
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: var(--radius-pill);
+  padding: 10px 24px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease-snappy), background 0.2s var(--ease-snappy);
+}
+.btn-pill-outline:hover {
+  border-color: var(--color-text-primary);
+  background: rgba(255,255,255,0.06);
+}
+
+/* ══════════════════════════════════════════════════
+   CHAT GRID  (3-column layout: replies | robot | history)
+
+   Mobile  (<1024px):
+     2 rows — robot (220px) on top, replies filling below.
+     History column is always hidden on mobile.
+     `order` is used to flip DOM order (replies comes
+     first in HTML for accessibility/SEO reasons).
+
+   Desktop (≥1024px):
+     3 columns side by side, order reset to DOM order.
+   ══════════════════════════════════════════════════ */
+
+.chat-grid {
+  flex:                  1;
+  display:               grid;
+  grid-template-columns: 1fr;
+  grid-template-rows:    220px 1fr;
+  overflow:              hidden;
+  min-height:            0;
+}
+
+/* Mobile stacking order: robot first, replies second */
+.chat-col-robot   { order: 1; min-height: 0; position: relative; }
+.chat-col-replies { order: 2; min-height: 0; overflow: hidden; }
+.chat-col-history { display: none; min-height: 0; overflow: hidden; }
+
+@media (min-width: 1024px) {
+  .chat-grid {
+    grid-template-columns: 1fr 1.57fr 1fr;
+    grid-template-rows:    1fr;
+  }
+
+  /* Reset ordering — DOM order places replies left, robot centre, history right */
+  .chat-col-robot   { order: 0; }
+  .chat-col-replies { order: 0; }
+  .chat-col-history { display: block; order: 0; }
 }

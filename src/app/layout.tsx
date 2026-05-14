@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Orbitron } from "next/font/google";
 import { cookies } from "next/headers";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Lang } from "@/lib/i18n";
@@ -16,6 +16,15 @@ const inter = Inter({
   display: "swap",
   preload: true,
   weight: ["400", "500", "600", "700"],
+});
+
+// Display font for hero titles and robot model names (Orbitron only covers latin)
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
+  subsets: ["latin"],
+  display: "swap",
+  preload: true,
+  weight: ["700"],
 });
 
 const geistSans = Geist({
@@ -116,7 +125,7 @@ export default async function RootLayout({
   return (
     <html lang={initialLang === 'el' ? 'el' : 'en'} className="dark" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${orbitron.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ fontFamily: 'var(--font-inter), var(--font-geist-sans), system-ui' }}
       >
         <LanguageProvider initialLang={initialLang}>
