@@ -9,301 +9,322 @@ import {
 } from 'react';
 
 export interface RobotStageHandle {
-  setActive: () => void;  // turn to face camera (session position)
-  setIdle:   () => void;  // return to right profile (logout)
+  setActive: () => void;
+  setIdle:   () => void;
 }
 
-// Right profile = TRONIX-5 reference pose (default/idle)
-const Y_IDLE    = -Math.PI * 0.44;
-// Nearly front-facing = session position (after login, stays until logout)
-const Y_SESSION =  0.12;
-const BASE_Y    = -0.35;
+interface RobotStageProps {
+  keepIdle?: boolean;
+}
 
-const RobotStage = forwardRef<RobotStageHandle>((_, ref) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef    = useRef<HTMLCanvasElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const robotRef  = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const gsapRef   = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const wobbleRef = useRef<any>(null);
+const Y_IDLE    = -Math.PI * 0.42;
+const Y_SESSION =  0.15;
+const BASE_Y    =  0;
 
-  useEffect(() => {
-    let cancelled = false;
-    const teardowns: (() => void)[] = [];
+const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
+  ({ keepIdle = false }, ref) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const canvasRef    = useRef<HTMLCanvasElement>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const robotRef  = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const gsapRef   = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const wobbleRef = useRef<any>(null);
 
-    (async () => {
-      const [THREE, { gsap }] = await Promise.all([
-        import('three'),
-        import('gsap'),
-      ]);
-      if (cancelled || !canvasRef.current || !containerRef.current) return;
+    useEffect(() => {
+      let cancelled = false;
+      const teardowns: (() => void)[] = [];
+      const idle = keepIdle;
 
-      gsapRef.current = gsap;
+      (async () => {
+        const [THREE, { gsap }] = await Promise.all([
+          import('three'),
+          import('gsap'),
+        ]);
+        if (cancelled || !canvasRef.current || !containerRef.current) return;
 
-      const canvas = canvasRef.current;
-      const cont   = containerRef.current;
-      let W = cont.clientWidth  || 440;
-      let H = cont.clientHeight || 620;
+        gsapRef.current = gsap;
 
-      // ── Scene ──────────────────────────────────────────────────────────────
-      const scene = new THREE.Scene();
+        const canvas = canvasRef.current;
+        const cont   = containerRef.current;
+        let W = cont.clientWidth  || 440;
+        let H = cont.clientHeight || 620;
 
-      // ── Camera ─────────────────────────────────────────────────────────────
-      const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-      camera.position.set(0, 0.55, 5.6);
-      camera.lookAt(0, 0.35, 0);
+        // ── Scene ──────────────────────────────────────────────────────────
+        const scene = new THREE.Scene();
 
-      // ── Renderer ───────────────────────────────────────────────────────────
-      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      renderer.setSize(W, H, false);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.toneMapping         = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.6;
-      teardowns.push(() => renderer.dispose());
+        // ── Camera ─────────────────────────────────────────────────────────
+        // FOV 34, positioned at Z=3.4 centered on head mid-point (y=0.12)
+        const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 100);
+        camera.position.set(0, 0.12, 3.4);
+        camera.lookAt(0, 0.12, 0);
 
-      // ── Lights ─────────────────────────────────────────────────────────────
-      // Very dim ambient — establishes minimum visibility for the dark surface
-      scene.add(new THREE.AmbientLight(0x111111, 1));
-
-      // Key: strong white from upper-right-front — the main specular highlight
-      const key = new THREE.DirectionalLight(0xffffff, 7);
-      key.position.set(3, 5, 4);
-      scene.add(key);
-
-      // Rim: blue-white from upper-left-back — creates the glowing silhouette
-      // This is the most important light for making the dark robot readable
-      const rim = new THREE.DirectionalLight(0x88aaff, 6);
-      rim.position.set(-4, 2, -3);
-      scene.add(rim);
-
-      // Fill: subtle cool-blue from below-front — softens the underside shadows
-      const fill = new THREE.DirectionalLight(0x223344, 2);
-      fill.position.set(0, -2, 3);
-      scene.add(fill);
-
-      // Eye glow: blue point light at visor position — the sci-fi scanner look
-      const eyeLight = new THREE.PointLight(0x0055ff, 3, 4);
-      eyeLight.position.set(0, 1.32, 1.2);
-      scene.add(eyeLight);
-
-      // ── Materials ──────────────────────────────────────────────────────────
-      // MeshPhongMaterial (not Standard) — works without an env map so
-      // specular highlights are bright and sharp on dark metallic surfaces.
-      const matBody = new THREE.MeshPhongMaterial({
-        color:     new THREE.Color(0x090909),
-        specular:  new THREE.Color(0xffffff),
-        shininess: 400,
-      });
-
-      // Visor band: glowing blue — the signature cyberpunk element
-      const matVisor = new THREE.MeshPhongMaterial({
-        color:             new THREE.Color(0x001133),
-        specular:          new THREE.Color(0x4499ff),
-        shininess:         800,
-        emissive:          new THREE.Color(0x001a44),
-        emissiveIntensity: 1.2,
-      });
-
-      // Detail panels: slightly lighter, cool-tinted specular
-      const matPanel = new THREE.MeshPhongMaterial({
-        color:     new THREE.Color(0x111111),
-        specular:  new THREE.Color(0x4466aa),
-        shininess: 200,
-      });
-
-      teardowns.push(() => { matBody.dispose(); matVisor.dispose(); matPanel.dispose(); });
-
-      // ── Geometry helper ────────────────────────────────────────────────────
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mk = (geo: any, mat = matBody) => {
-        teardowns.push(() => geo.dispose());
-        return new THREE.Mesh(geo, mat);
-      };
-
-      // ── Robot bust ─────────────────────────────────────────────────────────
-      const g = new THREE.Group();
-
-      // Chest
-      const chest = mk(new THREE.SphereGeometry(0.78, 48, 48));
-      chest.scale.set(1.10, 0.96, 0.66);
-      chest.position.set(0, 0, 0);
-      g.add(chest);
-
-      // Left shoulder
-      const lSho = mk(new THREE.SphereGeometry(0.27, 32, 32));
-      lSho.scale.set(0.90, 0.82, 0.74);
-      lSho.position.set(-0.95, 0.08, 0);
-      g.add(lSho);
-
-      // Right shoulder
-      const rSho = mk(new THREE.SphereGeometry(0.27, 32, 32));
-      rSho.scale.set(0.90, 0.82, 0.74);
-      rSho.position.set(0.95, 0.08, 0);
-      g.add(rSho);
-
-      // Neck
-      const neck = mk(new THREE.CylinderGeometry(0.18, 0.24, 0.30, 16));
-      neck.position.set(0, 0.67, 0);
-      g.add(neck);
-
-      // Head — elongated helmet shape
-      const head = mk(new THREE.SphereGeometry(0.60, 48, 48));
-      head.scale.set(1.0, 1.18, 0.86);
-      head.position.set(0, 1.30, 0);
-      g.add(head);
-
-      // Cranial ridge
-      const ridge = mk(new THREE.CylinderGeometry(0.065, 0.065, 0.52, 12), matPanel);
-      ridge.rotation.z = Math.PI / 2;
-      ridge.position.set(0.04, 1.97, 0);
-      g.add(ridge);
-
-      // Visor band — glowing blue, the key visual signature
-      const visor = mk(new THREE.TorusGeometry(0.58, 0.055, 16, 80), matVisor);
-      visor.rotation.x = Math.PI / 2;
-      visor.scale.z    = 0.36;
-      visor.position.set(0, 1.32, 0);
-      g.add(visor);
-
-      // Chest panel detail
-      const panel = mk(new THREE.BoxGeometry(0.50, 0.40, 0.04), matPanel);
-      panel.position.set(0, 0.04, 0.53);
-      g.add(panel);
-
-      g.rotation.y = Y_IDLE;
-      g.position.set(0, BASE_Y, 0);
-      scene.add(g);
-      robotRef.current = g;
-
-      // ── Render loop via GSAP ticker ────────────────────────────────────────
-      const tick = () => renderer.render(scene, camera);
-      gsap.ticker.add(tick);
-      teardowns.push(() => gsap.ticker.remove(tick));
-
-      // ── Resize via ResizeObserver ──────────────────────────────────────────
-      // Uses entry.contentRect so dimensions are accurate even on first fire.
-      // renderer.setSize(W, H, false) = update buffer only, not CSS dimensions.
-      const onResize = (entries: ResizeObserverEntry[]) => {
-        const { width, height } = entries[0].contentRect;
-        if (width === 0 || height === 0) return;
-        W = width;
-        H = height;
-        camera.aspect = W / H;
-        camera.updateProjectionMatrix();
+        // ── Renderer ───────────────────────────────────────────────────────
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
         renderer.setSize(W, H, false);
-      };
-      const ro = new ResizeObserver(onResize);
-      ro.observe(cont);
-      teardowns.push(() => ro.disconnect());
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.4;
+        teardowns.push(() => renderer.dispose());
 
-      // ── Entrance → auto session turn ───────────────────────────────────────
-      // 1. Robot rises from below (entrance animation)
-      // 2. After rising, turns to face the camera (session position)
-      //    — this is the ONE-TIME turn that happens on login
-      // 3. Subtle micro-wobble starts at session position
-      // setIdle() (called on logout) returns to Y_IDLE right profile.
-      gsap.fromTo(
-        g.position,
-        { y: BASE_Y - 0.6 },
-        {
-          y:        BASE_Y,
-          duration: 1.2,
-          ease:     'power3.out',
-          delay:    0.15,
-          onComplete: () => {
-            gsap.to(g.rotation, {
-              y:        Y_SESSION,
-              duration: 1.5,
-              ease:     'power2.inOut',
-              delay:    0.3,
-              onComplete: () => {
+        // ── Lights ─────────────────────────────────────────────────────────
+        // Dim blue-tinted ambient so the very darkest areas still read as metal
+        scene.add(new THREE.AmbientLight(0x06080f, 3));
+
+        // Key: strong white from upper-right-front — primary specular
+        const key = new THREE.DirectionalLight(0xffffff, 16);
+        key.position.set(4, 6, 5);
+        scene.add(key);
+
+        // Rim: intense blue-white from upper-left-back — creates the glowing silhouette
+        const rim = new THREE.DirectionalLight(0x5577ff, 28);
+        rim.position.set(-5, 3, -4);
+        scene.add(rim);
+
+        // Top accent: cold blue from directly above
+        const top = new THREE.DirectionalLight(0x8899cc, 6);
+        top.position.set(0, 8, 2);
+        scene.add(top);
+
+        // Rim accent: blue point light near the back-top of the head
+        const rimAccent = new THREE.PointLight(0x2244ff, 10, 3.5);
+        rimAccent.position.set(-0.85, 1.0, -0.8);
+        scene.add(rimAccent);
+
+        // Eye glow: blue point in front of the visor area
+        const eyeGlow = new THREE.PointLight(0x003399, 5, 2.5);
+        eyeGlow.position.set(0.1, 0.12, 0.85);
+        scene.add(eyeGlow);
+
+        // ── Materials ──────────────────────────────────────────────────────
+        // PBR metallic dark: MeshStandardMaterial looks dramatically better
+        // than Phong for dark shiny metal surfaces under directional lights.
+        const matBody = new THREE.MeshStandardMaterial({
+          color:     new THREE.Color(0x040408),
+          metalness: 0.78,
+          roughness: 0.16,
+        });
+        const matNeck = new THREE.MeshStandardMaterial({
+          color:     new THREE.Color(0x060810),
+          metalness: 0.82,
+          roughness: 0.20,
+        });
+        // Visor: deep blue-black with strong emissive → glowing scanner slit
+        const matVisor = new THREE.MeshStandardMaterial({
+          color:             new THREE.Color(0x000204),
+          metalness:         0.5,
+          roughness:         0.05,
+          emissive:          new THREE.Color(0x001840),
+          emissiveIntensity: 2.4,
+        });
+        const matRidge = new THREE.MeshStandardMaterial({
+          color:             new THREE.Color(0x080c18),
+          metalness:         0.88,
+          roughness:         0.12,
+          emissive:          new THREE.Color(0x000c20),
+          emissiveIntensity: 0.6,
+        });
+
+        teardowns.push(() => {
+          matBody.dispose();
+          matNeck.dispose();
+          matVisor.dispose();
+          matRidge.dispose();
+        });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mk = (geo: any, mat = matBody) => {
+          teardowns.push(() => geo.dispose());
+          return new THREE.Mesh(geo, mat);
+        };
+
+        // ── Robot bust ─────────────────────────────────────────────────────
+        const g = new THREE.Group();
+
+        // ── Head helmet — LatheGeometry (surface of revolution around Y) ──
+        // Profile: (radius, height) pairs. x=0 at apex → closed top.
+        // Widest at eye level (y≈0.24–0.44), tapers sharply to chin.
+        const headPoints = [
+          new THREE.Vector2(0.07, -0.82),  // neck opening — matches neck top
+          new THREE.Vector2(0.20, -0.68),  // chin bottom
+          new THREE.Vector2(0.30, -0.52),  // chin curve
+          new THREE.Vector2(0.39, -0.34),  // jaw
+          new THREE.Vector2(0.44, -0.14),  // lower face
+          new THREE.Vector2(0.47,  0.06),  // cheek
+          new THREE.Vector2(0.49,  0.24),  // eye level (widest)
+          new THREE.Vector2(0.49,  0.44),  // temple
+          new THREE.Vector2(0.47,  0.62),  // upper head
+          new THREE.Vector2(0.41,  0.78),  // crown start
+          new THREE.Vector2(0.28,  0.92),  // upper crown
+          new THREE.Vector2(0.10,  1.02),  // near apex
+          new THREE.Vector2(0.00,  1.06),  // apex — closed point
+        ];
+        const headMesh = mk(new THREE.LatheGeometry(headPoints, 72));
+        g.add(headMesh);
+
+        // ── Visor glow bands (open cylinders at eye level) ────────────────
+        // Radius is computed at y=0.14: head LatheGeometry radius ≈ 0.479
+        // Bands sit 0.010–0.011 units outside head surface to avoid Z-fight.
+        const visor1 = mk(new THREE.CylinderGeometry(0.490, 0.490, 0.028, 72, 1, true), matVisor);
+        visor1.position.y = 0.14;
+        g.add(visor1);
+
+        const visor2 = mk(new THREE.CylinderGeometry(0.478, 0.478, 0.013, 72, 1, true), matVisor);
+        visor2.position.y = 0.06;
+        g.add(visor2);
+
+        // ── Cranial ridge — thin horizontal bar across top of dome ─────────
+        const ridge = mk(new THREE.CylinderGeometry(0.022, 0.022, 0.62, 10), matRidge);
+        ridge.rotation.z = Math.PI / 2;
+        ridge.position.y = 0.94;
+        g.add(ridge);
+
+        // ── Neck ──────────────────────────────────────────────────────────
+        // Top radius 0.07 matches head base opening at y=-0.82
+        const neck = mk(new THREE.CylinderGeometry(0.07, 0.14, 0.38, 24), matNeck);
+        neck.position.y = -1.01;
+        g.add(neck);
+
+        // ── Base / shoulder ring ───────────────────────────────────────────
+        const base = mk(new THREE.TorusGeometry(0.14, 0.032, 8, 32), matNeck);
+        base.rotation.x = Math.PI / 2;
+        base.position.y = -1.20;
+        g.add(base);
+
+        g.rotation.y = Y_IDLE;
+        g.position.set(0, BASE_Y, 0);
+        scene.add(g);
+        robotRef.current = g;
+
+        // ── Render loop via GSAP ticker ────────────────────────────────────
+        const tick = () => renderer.render(scene, camera);
+        gsap.ticker.add(tick);
+        teardowns.push(() => gsap.ticker.remove(tick));
+
+        // ── Resize ────────────────────────────────────────────────────────
+        const onResize = (entries: ResizeObserverEntry[]) => {
+          const { width, height } = entries[0].contentRect;
+          if (width === 0 || height === 0) return;
+          W = width; H = height;
+          camera.aspect = W / H;
+          camera.updateProjectionMatrix();
+          renderer.setSize(W, H, false);
+        };
+        const ro = new ResizeObserver(onResize);
+        ro.observe(cont);
+        teardowns.push(() => ro.disconnect());
+
+        // ── Entrance → session turn (or idle wobble if keepIdle) ───────────
+        gsap.fromTo(
+          g.position,
+          { y: BASE_Y - 0.8 },
+          {
+            y:        BASE_Y,
+            duration: 1.4,
+            ease:     'power3.out',
+            delay:    0.2,
+            onComplete: () => {
+              if (idle) {
                 wobbleRef.current = gsap.to(g.rotation, {
-                  y:        Y_SESSION + 0.06,
+                  y:        Y_IDLE + 0.08,
                   duration: 5,
                   yoyo:     true,
                   repeat:   -1,
                   ease:     'sine.inOut',
                 });
-              },
-            });
-          },
-        }
-      );
-    })();
+              } else {
+                gsap.to(g.rotation, {
+                  y:        Y_SESSION,
+                  duration: 1.8,
+                  ease:     'power2.inOut',
+                  delay:    0.4,
+                  onComplete: () => {
+                    wobbleRef.current = gsap.to(g.rotation, {
+                      y:        Y_SESSION + 0.06,
+                      duration: 5.5,
+                      yoyo:     true,
+                      repeat:   -1,
+                      ease:     'sine.inOut',
+                    });
+                  },
+                });
+              }
+            },
+          }
+        );
+      })();
 
-    return () => {
-      cancelled = true;
+      return () => {
+        cancelled = true;
+        wobbleRef.current?.kill();
+        teardowns.forEach(fn => fn());
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const setActive = useCallback(() => {
+      const gsap = gsapRef.current;
+      const g    = robotRef.current;
+      if (!gsap || !g) return;
       wobbleRef.current?.kill();
-      teardowns.forEach(fn => fn());
-    };
-  }, []);
+      gsap.to(g.rotation, {
+        y:        Y_SESSION,
+        duration: 1.1,
+        ease:     'power2.inOut',
+        onComplete: () => {
+          wobbleRef.current = gsap.to(g.rotation, {
+            y:        Y_SESSION + 0.06,
+            duration: 5.5,
+            yoyo:     true,
+            repeat:   -1,
+            ease:     'sine.inOut',
+          });
+        },
+      });
+    }, []);
 
-  // setActive: turn to session/face-camera position (available for external use)
-  const setActive = useCallback(() => {
-    const gsap = gsapRef.current;
-    const g    = robotRef.current;
-    if (!gsap || !g) return;
+    const setIdle = useCallback(() => {
+      const gsap = gsapRef.current;
+      const g    = robotRef.current;
+      if (!gsap || !g) return;
+      wobbleRef.current?.kill();
+      gsap.to(g.rotation, {
+        y:        Y_IDLE,
+        duration: 1.5,
+        ease:     'power2.inOut',
+        onComplete: () => {
+          wobbleRef.current = gsap.to(g.rotation, {
+            y:        Y_IDLE + 0.08,
+            duration: 5,
+            yoyo:     true,
+            repeat:   -1,
+            ease:     'sine.inOut',
+          });
+        },
+      });
+    }, []);
 
-    wobbleRef.current?.kill();
-    gsap.to(g.rotation, {
-      y:        Y_SESSION,
-      duration: 1.1,
-      ease:     'power2.inOut',
-      onComplete: () => {
-        wobbleRef.current = gsap.to(g.rotation, {
-          y:        Y_SESSION + 0.06,
-          duration: 5,
-          yoyo:     true,
-          repeat:   -1,
-          ease:     'sine.inOut',
-        });
-      },
-    });
-  }, []);
+    useImperativeHandle(ref, () => ({ setActive, setIdle }), [setActive, setIdle]);
 
-  // setIdle: return to right profile — called by page.tsx on logout
-  const setIdle = useCallback(() => {
-    const gsap = gsapRef.current;
-    const g    = robotRef.current;
-    if (!gsap || !g) return;
-
-    wobbleRef.current?.kill();
-    gsap.to(g.rotation, {
-      y:        Y_IDLE,
-      duration: 1.5,
-      ease:     'power2.inOut',
-      onComplete: () => {
-        wobbleRef.current = gsap.to(g.rotation, {
-          y:        Y_IDLE + 0.08,
-          duration: 4.5,
-          yoyo:     true,
-          repeat:   -1,
-          ease:     'sine.inOut',
-        });
-      },
-    });
-  }, []);
-
-  useImperativeHandle(ref, () => ({ setActive, setIdle }), [setActive, setIdle]);
-
-  return (
-    <section
-      data-slot="robot"
-      ref={containerRef}
-      aria-label="RiskRadar AI assistant"
-      className="relative w-full h-full"
-    >
-      <div className="hero-glow" aria-hidden="true" />
-      <div className="hero-arc"  aria-hidden="true" />
-      <canvas
-        ref={canvasRef}
-        style={{ display: 'block', width: '100%', height: '100%' }}
-      />
-    </section>
-  );
-});
+    return (
+      <section
+        data-slot="robot"
+        ref={containerRef}
+        aria-label="RiskRadar AI assistant"
+        className="relative w-full h-full"
+      >
+        <div className="hero-glow" aria-hidden="true" />
+        <div className="hero-arc"  aria-hidden="true" />
+        <canvas
+          ref={canvasRef}
+          style={{ display: 'block', width: '100%', height: '100%' }}
+        />
+      </section>
+    );
+  }
+);
 
 RobotStage.displayName = 'RobotStage';
 export default RobotStage;

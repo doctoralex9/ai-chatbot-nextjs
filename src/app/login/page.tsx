@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
+import RobotStage from '@/components/RobotStage';
 
 export default function LoginPage() {
   const [mode, setMode]         = useState<'signin' | 'signup'>('signin');
@@ -82,19 +83,24 @@ export default function LoginPage() {
   return (
     <div className="bg-grid min-h-dvh flex flex-col items-center justify-center px-4 relative overflow-hidden">
 
-      {/* Language toggle */}
-      <div className="absolute top-4 right-4 z-20">
-        <LanguageToggle />
+      {/* Full-screen robot background */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+        <RobotStage keepIdle />
       </div>
 
-      {/* Radial glow behind the card */}
-      <div className="hero-glow" aria-hidden />
+      {/* Radial glow between robot and card */}
+      <div className="hero-glow" aria-hidden style={{ zIndex: 1 }} />
+
+      {/* Language toggle */}
+      <div className="absolute top-4 right-4" style={{ zIndex: 20 }}>
+        <LanguageToggle />
+      </div>
 
       {/* Modal card */}
       <div
         ref={cardRef}
-        className="relative z-10 w-full"
-        style={{ maxWidth: '360px', opacity: 0 /* GSAP animates this in */ }}
+        className="relative w-full"
+        style={{ maxWidth: '360px', opacity: 0, zIndex: 10 }}
       >
         {/* App name */}
         <div className="flex flex-col items-center mb-8 text-center">
@@ -121,14 +127,14 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card shell */}
+        {/* Card shell — 65% transparent so robot is visible behind */}
         <div
           style={{
-            background: 'var(--color-bg-card)',
-            border: '1px solid var(--color-border)',
+            background: 'rgba(6, 6, 10, 0.35)',
+            border: '1px solid rgba(255,255,255,0.13)',
             borderRadius: 'var(--radius-lg)',
-            backdropFilter: 'var(--blur-modal)',
-            WebkitBackdropFilter: 'var(--blur-modal)',
+            backdropFilter: 'blur(28px) saturate(150%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(150%)',
             padding: '32px',
           }}
         >
