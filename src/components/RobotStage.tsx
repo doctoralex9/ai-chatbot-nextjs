@@ -18,10 +18,10 @@ interface RobotStageProps {
   entrance?: 'slide' | 'zoom';
 }
 
-// +54° at idle — left side of model faces camera, matching old ear-visible pose.
-// Near-zero at session — model turns to face the user when chatting.
-const Y_IDLE    = +Math.PI * 0.30;
-const Y_SESSION =  0.15;
+// ~40° at idle — visible 3/4 profile, shows the model's depth and asymmetry.
+// ~5° at session — robot almost faces the user directly when chatting.
+const Y_IDLE    = 0.40;
+const Y_SESSION = 0.08;
 const BASE_Y    =  0;
 
 const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(

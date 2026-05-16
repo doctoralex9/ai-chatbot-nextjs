@@ -122,6 +122,15 @@ export default function Chatbot() {
     }
   }, [status, userEmail]);
 
+  // Robot turns to face the user while streaming, returns to profile when done
+  useEffect(() => {
+    if (isStreaming) {
+      robotRef.current?.setActive();
+    } else {
+      robotRef.current?.setIdle();
+    }
+  }, [isStreaming]);
+
   // Slide the bottom panel up when the chat page finishes loading
   useEffect(() => {
     if (isLoadingHistory) return;
@@ -363,7 +372,7 @@ export default function Chatbot() {
 
           {/* Center / mobile-top: Three.js robot */}
           <div className="chat-col-robot">
-            <RobotStage ref={robotRef} />
+            <RobotStage ref={robotRef} keepIdle />
           </div>
 
           {/* Right: Chat history — desktop only */}

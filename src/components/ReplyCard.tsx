@@ -6,43 +6,53 @@ import { renderMarkdown } from '@/lib/renderMarkdown';
 interface ReplyCardProps {
   text:         string;
   timestamp?:   Date;
-  isStreaming?: boolean; // true only on the last card while AI is generating
+  isStreaming?: boolean;
+  isNew?:       boolean; // true = just appeared during session → fly from mouth
 }
 
-// Formats a Date to HH:MM using the browser locale.
-// Called lazily so it never runs on the server.
 function formatTime(d: Date): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function ReplyCard({ text, timestamp, isStreaming }: ReplyCardProps) {
+export default function ReplyCard({ text, timestamp, isStreaming, isNew }: ReplyCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // "From mouth" entrance — card rises from below and expands like a spoken word.
-  // Fires once on mount; empty dep array means text stream updates don't re-trigger it.
   useEffect(() => {
     let cancelled = false;
     import('gsap').then(({ gsap }) => {
       if (cancelled || !cardRef.current) return;
+      const card = cardRef.current;
+
+      if (!isNew) {
+        // History card: simple fast fade-in, no motion
+        gsap.fromTo(card, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power2.out' });
+        return;
+      }
+
+      // New message: calculate the mouth's screen position and fly from there.
+      // The robot mouth sits at roughly the horizontal center of the viewport,
+      // about 55% of the way down (lower half of the face).
+      const rect    = card.getBoundingClientRect();
+      const mouthX  = window.innerWidth  * 0.5;
+      const mouthY  = window.innerHeight * 0.55;
+      const startX  = mouthX - (rect.left + rect.width  / 2);
+      const startY  = mouthY - (rect.top  + rect.height / 2);
+
       gsap.fromTo(
-        cardRef.current,
-        { y: 44, scale: 0.86, opacity: 0, transformOrigin: 'bottom center' },
-        { y: 0,  scale: 1,    opacity: 1, duration: 0.72, ease: 'back.out(1.15)' }
+        card,
+        { x: startX, y: startY, scale: 0.30, opacity: 0 },
+        { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.85, ease: 'power3.out' }
       );
     });
     return () => { cancelled = true; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div ref={cardRef} className="reply-card" style={{ opacity: 0 /* GSAP entrance */ }}>
 
       {/* ── Header row ── */}
       <div className="flex items-center gap-2 mb-3">
-        {/* Pulsing green dot — signals the AI is "live" */}
-        <span
-          className="status-live-dot flex-shrink-0"
-          aria-hidden="true"
-        />
+        <span className="status-live-dot flex-shrink-0" aria-hidden="true" />
         <span
           style={{
             fontFamily:    'var(--font-sans)',
@@ -86,8 +96,6 @@ export default function ReplyCard({ text, timestamp, isStreaming }: ReplyCardPro
   );
 }
 
-// ── Typing indicator shown while waiting for the first streaming token ────────
-// Reuses the .typing-bar keyframe already defined in globals.css.
 function TypingBars() {
   return (
     <div className="flex items-center gap-[5px] h-5 py-0.5">

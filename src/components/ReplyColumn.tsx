@@ -9,8 +9,6 @@ interface ReplyColumnProps {
   isStreaming: boolean;
 }
 
-// Extracts the plain text from a UIMessage's parts array.
-// Returns null if there's no text content (tool calls, empty messages, etc.)
 function extractText(msg: UIMessage): string | null {
   for (const part of msg.parts) {
     if (
@@ -31,16 +29,27 @@ export default function ReplyColumn({ messages, isStreaming }: ReplyColumnProps)
   const bottomRef  = useRef<HTMLDivElement>(null);
   const columnRef  = useRef<HTMLDivElement>(null);
 
-  // Filter to assistant messages only — user messages go in ChatHistory (right column).
+  // Tracks how many assistant messages existed on the previous render.
+  // null = first render (all cards are history, no from-mouth animation).
+  // After first render it is set to the count; any card beyond that count is "new".
+  const prevCountRef = useRef<number | null>(null);
+
   const assistantMessages = messages.filter(m => m.role === 'assistant');
 
-  // Auto-scroll to the latest reply whenever messages update or streaming progresses.
-  // `behavior: 'smooth'` keeps it readable; the streaming text scrolls gently down.
+  // After every render, store the current count so the next render can compare.
+  useEffect(() => {
+    prevCountRef.current = assistantMessages.length;
+  });
+
+  const isNewCard = (idx: number) =>
+    prevCountRef.current !== null && idx >= prevCountRef.current;
+
+  // Auto-scroll to the latest reply
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isStreaming]);
 
-  // Column entrance on first mount — slides in from the left with the rest of the page.
+  // Column entrance on first mount
   useEffect(() => {
     let cancelled = false;
     import('gsap').then(({ gsap }) => {
@@ -59,16 +68,16 @@ export default function ReplyColumn({ messages, isStreaming }: ReplyColumnProps)
       ref={columnRef}
       className="scrollbar-hide"
       style={{
-        opacity:   0, // GSAP entrance
-        display:   'flex',
+        opacity:       0, // GSAP entrance
+        display:       'flex',
         flexDirection: 'column',
-        gap:       '12px',
-        overflowY: 'auto',
-        height:    '100%',
-        padding:   '24px 16px 24px 24px',
+        gap:           '12px',
+        overflowY:     'auto',
+        height:        '100%',
+        padding:       '24px 16px 24px 24px',
       }}
     >
-      {/* Empty state — shown before the first AI reply */}
+      {/* Empty state */}
       {assistantMessages.length === 0 && !isStreaming && (
         <div
           className="flex flex-col items-start gap-2 mt-auto"
@@ -86,24 +95,18 @@ export default function ReplyColumn({ messages, isStreaming }: ReplyColumnProps)
         </div>
       )}
 
-      {/* Streaming placeholder — shown when AI has started but no text yet */}
+      {/* Streaming placeholder — always a "new" card */}
       {isStreaming && assistantMessages.length === 0 && (
-        <ReplyCard text="" isStreaming />
+        <ReplyCard text="" isStreaming isNew />
       )}
 
-      {/* One card per assistant message */}
       {assistantMessages.map((msg, idx) => {
-        const text        = extractText(msg);
+        const text            = extractText(msg);
         if (!text && !isStreaming) return null;
 
-        const isLastMsg   = idx === assistantMessages.length - 1;
+        const isLastMsg       = idx === assistantMessages.length - 1;
         const isThisStreaming = isStreaming && isLastMsg;
-
-        // Timestamps are not stored in UIMessage, so we generate an approximate
-        // one from the message index to give the UI a time reference.
-        // When history is loaded from Supabase these will all show the same
-        // relative time — acceptable for now; a future pass can persist timestamps.
-        const ts = new Date();
+        const ts              = new Date();
 
         return (
           <ReplyCard
@@ -111,11 +114,11 @@ export default function ReplyColumn({ messages, isStreaming }: ReplyColumnProps)
             text={text ?? ''}
             timestamp={isThisStreaming ? undefined : ts}
             isStreaming={isThisStreaming}
+            isNew={isNewCard(idx)}
           />
         );
       })}
 
-      {/* Invisible anchor — scrollIntoView target */}
       <div ref={bottomRef} />
     </div>
   );
