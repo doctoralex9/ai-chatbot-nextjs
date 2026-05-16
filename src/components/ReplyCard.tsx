@@ -18,17 +18,16 @@ function formatTime(d: Date): string {
 export default function ReplyCard({ text, timestamp, isStreaming }: ReplyCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Slide in from the left on mount — fires once when the card is first added.
-  // We don't re-run this on text updates (the dep array is empty), so the streaming
-  // text updates don't cause repeat animations.
+  // "From mouth" entrance — card rises from below and expands like a spoken word.
+  // Fires once on mount; empty dep array means text stream updates don't re-trigger it.
   useEffect(() => {
     let cancelled = false;
     import('gsap').then(({ gsap }) => {
       if (cancelled || !cardRef.current) return;
       gsap.fromTo(
         cardRef.current,
-        { x: -28, opacity: 0 },
-        { x: 0,   opacity: 1, duration: 0.55, ease: 'power3.out' }
+        { y: 44, scale: 0.86, opacity: 0, transformOrigin: 'bottom center' },
+        { y: 0,  scale: 1,    opacity: 1, duration: 0.72, ease: 'back.out(1.15)' }
       );
     });
     return () => { cancelled = true; };

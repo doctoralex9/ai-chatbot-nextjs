@@ -849,49 +849,70 @@ body {
      3 columns side by side, order reset to DOM order.
    ══════════════════════════════════════════════════ */
 
-/* ── CHAT GRID — responsive 3-breakpoint layout ──
-   Mobile  (<640px):  2 rows — robot (clamp height) on top, replies below
-   Tablet  (640-1023px): 2 columns — robot left, replies right
-   Desktop (≥1024px): 3 columns — replies | robot | history
-   ────────────────────────────────────────────── */
+/* ── CHAT GRID — responsive layout ──────────────────
+   Mobile + Tablet (<1024px):
+     Robot fills the grid as an absolute background layer.
+     Reply cards float on top with glass transparency so
+     the robot face is always visible through them.
+
+   Desktop (≥1024px):
+     Classic 3-column side-by-side.
+   ──────────────────────────────────────────────────── */
 
 .chat-grid {
   flex:                  1;
   display:               grid;
-  /* Robot height scales with screen: min 160px, ~26% of viewport, max 260px */
   grid-template-columns: 1fr;
-  grid-template-rows:    clamp(160px, 26dvh, 260px) 1fr;
+  grid-template-rows:    1fr;
   overflow:              hidden;
   min-height:            0;
+  position:              relative; /* containing block for absolute robot */
 }
 
-/* Mobile stacking order: robot first (top), replies second (bottom) */
-.chat-col-robot   { order: 1; min-height: 0; position: relative; overflow: hidden; }
-.chat-col-replies { order: 2; min-height: 0; overflow: hidden; }
+/* Robot: full-bleed behind the reply column */
+.chat-col-robot {
+  position:       absolute;
+  inset:          0;
+  z-index:        0;
+  pointer-events: none; /* let clicks pass through to replies */
+  min-height:     0;
+  overflow:       hidden;
+}
+
+/* Replies: full-height, sits on top of the robot */
+.chat-col-replies {
+  position:   relative;
+  z-index:    1;
+  min-height: 0;
+  overflow:   hidden;
+}
+
 .chat-col-history { display: none; min-height: 0; overflow: hidden; }
 
-/* Tablet: 2-column side-by-side (robot left, replies right) */
-@media (min-width: 640px) and (max-width: 1023px) {
-  .chat-grid {
-    grid-template-columns: 1fr 1.4fr;
-    grid-template-rows:    1fr;
-  }
-
-  /* DOM order is replies(1st), robot(2nd) — flip so robot is left */
-  .chat-col-robot   { order: 1; }
-  .chat-col-replies { order: 2; }
-  .chat-col-history { display: none; }
-}
-
-/* Desktop: 3 columns */
+/* Desktop: 3 columns, robot back in normal flow */
 @media (min-width: 1024px) {
   .chat-grid {
     grid-template-columns: 1fr 1.57fr 1fr;
     grid-template-rows:    1fr;
   }
 
-  /* Reset ordering — DOM order: replies left, robot centre, history right */
-  .chat-col-robot   { order: 0; }
-  .chat-col-replies { order: 0; }
+  .chat-col-robot {
+    position:       relative;
+    inset:          unset;
+    z-index:        auto;
+    pointer-events: auto;
+    order:          0;
+  }
+  .chat-col-replies { z-index: auto; order: 0; }
   .chat-col-history { display: block; order: 0; }
+}
+
+/* Reply card: deep glass on mobile/tablet so the robot shows through */
+@media (max-width: 1023px) {
+  .reply-card {
+    background:           rgba(5, 5, 10, 0.48);
+    backdrop-filter:      blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+    border-color:         rgba(255, 255, 255, 0.07);
+  }
 }

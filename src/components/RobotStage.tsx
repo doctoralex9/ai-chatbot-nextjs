@@ -57,8 +57,8 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
         const scene  = new THREE.Scene();
 
         const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 100);
-        camera.position.set(0, -0.1, 3.4);
-        camera.lookAt(0, 0.16, 0);
+        camera.position.set(0, 0, 3.0);
+        camera.lookAt(0, 0.06, 0);
 
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
         renderer.setSize(W, H, false);
@@ -132,11 +132,11 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
 
         const model = gltf.scene;
 
-        // Auto-scale: fit the model inside ~1.8 scene units (head fills the frame)
+        // Auto-scale: fit the model inside ~1.4 scene units (full head visible with breathing room)
         const box    = new THREE.Box3().setFromObject(model);
         const size   = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale  = 1.8 / maxDim;
+        const scale  = 1.4 / maxDim;
         model.scale.setScalar(scale);
 
         // Center the model on its bounding-box midpoint after scaling
