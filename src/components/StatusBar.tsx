@@ -20,7 +20,7 @@ export default function StatusBar({
   onLogout,
   onUsageClick,
 }: StatusBarProps) {
-  const { lang, setLang, tr } = useLanguage();
+  const { lang, setLang } = useLanguage();
   const barRef = useRef<HTMLDivElement>(null);
 
   // Slide up from the bottom edge on mount
@@ -100,24 +100,6 @@ export default function StatusBar({
         <BarChartIcon />
         {isSuperuser ? '∞' : `${usageCount} / ${FREE_LIMIT}`}
       </button>
-
-      <Separator />
-
-      {/* ── Live indicator ───────────────────────────── */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <span className="status-live-dot" aria-hidden="true" />
-        <span
-          style={{
-            fontSize: '11px',
-            fontWeight: 500,
-            letterSpacing: '0.06em',
-            fontFamily: 'var(--font-sans)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          {tr.live}
-        </span>
-      </div>
 
       {/* ── Spacer pushes right-side items to the edge ─ */}
       <div style={{ flex: 1 }} />
