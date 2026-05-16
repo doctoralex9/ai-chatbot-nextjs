@@ -52,7 +52,6 @@ export default function ReplyColumn({ messages, isStreaming }: ReplyColumnProps)
       );
     });
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

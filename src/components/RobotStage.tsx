@@ -149,6 +149,7 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           model.traverse((obj: any) => {
             obj.geometry?.dispose();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
             else obj.material?.dispose();
           });

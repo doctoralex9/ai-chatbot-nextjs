@@ -45,7 +45,6 @@ export default function ChatHistory({ messages, isStreaming }: ChatHistoryProps)
       );
     });
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Scroll to newest item when messages change

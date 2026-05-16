@@ -32,7 +32,6 @@ export default function ReplyCard({ text, timestamp, isStreaming }: ReplyCardPro
       );
     });
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
