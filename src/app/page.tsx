@@ -39,9 +39,10 @@ export default function Chatbot() {
   const [isDragOver, setIsDragOver]               = useState(false);
 
   // ── Refs ──────────────────────────────────────────────────────────────────
-  const dragCounterRef = useRef(0);
-  const fileInputRef   = useRef<HTMLInputElement | null>(null);
-  const robotRef       = useRef<RobotStageHandle | null>(null);
+  const dragCounterRef   = useRef(0);
+  const fileInputRef     = useRef<HTMLInputElement | null>(null);
+  const robotRef         = useRef<RobotStageHandle | null>(null);
+  const bottomPanelRef   = useRef<HTMLDivElement | null>(null);
 
   const supabase = createClient();
   const router   = useRouter();
@@ -120,6 +121,21 @@ export default function Chatbot() {
         .catch(() => {});
     }
   }, [status, userEmail]);
+
+  // Slide the bottom panel up when the chat page finishes loading
+  useEffect(() => {
+    if (isLoadingHistory) return;
+    let cancelled = false;
+    import('gsap').then(({ gsap }) => {
+      if (cancelled || !bottomPanelRef.current) return;
+      gsap.fromTo(
+        bottomPanelRef.current,
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out', delay: 0.45 }
+      );
+    });
+    return () => { cancelled = true; };
+  }, [isLoadingHistory]);
 
   const handleLogout = useCallback(async () => {
     robotRef.current?.setIdle();  // turn back to right profile before leaving
@@ -357,14 +373,18 @@ export default function Chatbot() {
         </div>
 
         {/* ── Bottom panel: warning + input ── */}
-        <div style={{
-          flexShrink: 0,
-          borderTop:  '1px solid var(--color-border)',
-          background: 'rgba(8, 8, 8, 0.92)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}>
+        <div
+          ref={bottomPanelRef}
+          style={{
+            opacity:              0,
+            flexShrink:           0,
+            borderTop:            '1px solid var(--color-border)',
+            background:           'rgba(8, 8, 8, 0.92)',
+            backdropFilter:       'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            paddingBottom:        'env(safe-area-inset-bottom, 0px)',
+          }}
+        >
           <div style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
             <div style={{ padding: '10px 16px 6px' }}>
               <WarningBanner />

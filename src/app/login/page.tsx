@@ -18,22 +18,43 @@ export default function LoginPage() {
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState('');
 
-  const cardRef = useRef<HTMLDivElement>(null);
+  const titleRef  = useRef<HTMLDivElement>(null);
+  const cardRef   = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLParagraphElement>(null);
 
   const { tr }  = useLanguage();
   const supabase = createClient();
   const router   = useRouter();
 
-  // Card slides up on mount — loaded dynamically so GSAP is never in the server bundle
+  // Cinematic entrance: robot zooms in first, then UI elements stagger in.
+  // Title → card shell → form fields → footer, coordinated with robot's 0.3s delay.
   useEffect(() => {
     let cancelled = false;
     import('gsap').then(({ gsap }) => {
-      if (cancelled || !cardRef.current) return;
-      gsap.fromTo(
-        cardRef.current,
-        { y: 28, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.72, ease: 'power3.out' }
-      );
+      if (cancelled || !titleRef.current || !cardRef.current || !footerRef.current) return;
+
+      const formEls = Array.from(cardRef.current.querySelectorAll('[data-s]'));
+
+      // Set initial transform positions (opacity is set via inline style in JSX)
+      gsap.set(titleRef.current, { y: 22 });
+      gsap.set(cardRef.current,  { y: 30 });
+      gsap.set(formEls,          { y: 14 });
+
+      // Timeline starts at 0.5s — robot zoom is halfway done by then (delay 0.3 + 0.2 into tween)
+      const tl = gsap.timeline({ delay: 0.5 });
+
+      tl.to(titleRef.current, {
+        opacity: 1, y: 0, duration: 0.65, ease: 'power3.out',
+      });
+      tl.to(cardRef.current, {
+        opacity: 1, y: 0, duration: 0.70, ease: 'power3.out',
+      }, '-=0.3');
+      tl.to(formEls, {
+        y: 0, duration: 0.45, ease: 'power2.out', stagger: 0.09,
+      }, '<0.22');
+      tl.to(footerRef.current, {
+        opacity: 1, duration: 0.45,
+      }, '-=0.1');
     });
     return () => { cancelled = true; };
   }, []);
@@ -83,9 +104,9 @@ export default function LoginPage() {
   return (
     <div className="bg-grid min-h-dvh flex flex-col items-center justify-center px-4 relative overflow-hidden">
 
-      {/* Full-screen robot background */}
+      {/* Full-screen robot — zoom entrance */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <RobotStage keepIdle />
+        <RobotStage keepIdle entrance="zoom" />
       </div>
 
       {/* Radial glow between robot and card */}
@@ -96,20 +117,21 @@ export default function LoginPage() {
         <LanguageToggle />
       </div>
 
-      {/* Modal card */}
-      <div
-        ref={cardRef}
-        className="relative w-full"
-        style={{ maxWidth: '360px', opacity: 0, zIndex: 10 }}
-      >
-        {/* App name */}
-        <div className="flex flex-col items-center mb-8 text-center">
+      {/* Content wrapper */}
+      <div className="relative w-full" style={{ maxWidth: '360px', zIndex: 10 }}>
+
+        {/* App name — fades in first */}
+        <div
+          ref={titleRef}
+          className="flex flex-col items-center mb-8 text-center"
+          style={{ opacity: 0 }}
+        >
           <h1
             className="text-2xl tracking-tight"
             style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              color: 'var(--color-text-primary)',
+              fontFamily:    'var(--font-display)',
+              fontWeight:    700,
+              color:         'var(--color-text-primary)',
               letterSpacing: '-0.01em',
             }}
           >
@@ -118,8 +140,8 @@ export default function LoginPage() {
           <p
             className="text-xs mt-1"
             style={{
-              fontFamily: 'var(--font-sans)',
-              color: 'var(--color-text-secondary)',
+              fontFamily:    'var(--font-sans)',
+              color:         'var(--color-text-secondary)',
               letterSpacing: '0.04em',
             }}
           >
@@ -127,23 +149,26 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card shell — 65% transparent so robot is visible behind */}
+        {/* Card shell — slides in after title */}
         <div
+          ref={cardRef}
           style={{
-            background: 'rgba(6, 6, 10, 0.35)',
-            border: '1px solid rgba(255,255,255,0.13)',
-            borderRadius: 'var(--radius-lg)',
-            backdropFilter: 'blur(28px) saturate(150%)',
+            opacity:              0,
+            background:           'rgba(6, 6, 10, 0.35)',
+            border:               '1px solid rgba(255,255,255,0.13)',
+            borderRadius:         'var(--radius-lg)',
+            backdropFilter:       'blur(28px) saturate(150%)',
             WebkitBackdropFilter: 'blur(28px) saturate(150%)',
-            padding: '32px',
+            padding:              '32px',
           }}
         >
           {/* Tab switcher */}
           <div
+            data-s
             className="flex mb-6 p-1 gap-1"
             style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid var(--color-border)',
+              background:   'rgba(255,255,255,0.03)',
+              border:       '1px solid var(--color-border)',
               borderRadius: 'var(--radius-pill)',
             }}
           >
@@ -154,9 +179,9 @@ export default function LoginPage() {
                 onClick={() => switchMode(m)}
                 className="flex-1 py-2 text-xs font-semibold transition-all duration-200"
                 style={{
-                  borderRadius: 'var(--radius-pill)',
-                  fontFamily: 'var(--font-sans)',
-                  letterSpacing: '0.06em',
+                  borderRadius:   'var(--radius-pill)',
+                  fontFamily:     'var(--font-sans)',
+                  letterSpacing:  '0.06em',
                   ...(mode === m
                     ? { background: '#ffffff', color: '#000000', boxShadow: '0 1px 4px rgba(0,0,0,0.5)' }
                     : { background: 'transparent', color: 'var(--color-text-muted)' }
@@ -169,8 +194,9 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
             {/* Email */}
-            <div className="flex flex-col gap-1.5">
+            <div data-s className="flex flex-col gap-1.5">
               <label
                 className="text-xs font-semibold"
                 style={{ fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
@@ -185,25 +211,25 @@ export default function LoginPage() {
                 autoComplete="email"
                 placeholder="email@example.com"
                 style={{
-                  fontSize: '16px', // prevents iOS zoom on focus
-                  fontFamily: 'var(--font-sans)',
-                  height: '44px',
-                  padding: '0 14px',
-                  background: 'rgba(0,0,0,0.45)',
-                  border: '1px solid var(--color-border)',
+                  fontSize:     '16px',
+                  fontFamily:   'var(--font-sans)',
+                  height:       '44px',
+                  padding:      '0 14px',
+                  background:   'rgba(0,0,0,0.45)',
+                  border:       '1px solid var(--color-border)',
                   borderRadius: 'var(--radius-sm)',
-                  color: 'var(--color-text-primary)',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  width: '100%',
+                  color:        'var(--color-text-primary)',
+                  outline:      'none',
+                  transition:   'border-color 0.2s',
+                  width:        '100%',
                 }}
-                onFocus={e  => { e.currentTarget.style.borderColor = 'var(--color-border-focus)'; }}
-                onBlur={e   => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-focus)'; }}
+                onBlur={e  => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
               />
             </div>
 
             {/* Password */}
-            <div className="flex flex-col gap-1.5">
+            <div data-s className="flex flex-col gap-1.5">
               <label
                 className="text-xs font-semibold"
                 style={{ fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
@@ -219,17 +245,17 @@ export default function LoginPage() {
                 autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                 placeholder={tr.login.placeholderPassword}
                 style={{
-                  fontSize: '16px',
-                  fontFamily: 'var(--font-sans)',
-                  height: '44px',
-                  padding: '0 14px',
-                  background: 'rgba(0,0,0,0.45)',
-                  border: '1px solid var(--color-border)',
+                  fontSize:     '16px',
+                  fontFamily:   'var(--font-sans)',
+                  height:       '44px',
+                  padding:      '0 14px',
+                  background:   'rgba(0,0,0,0.45)',
+                  border:       '1px solid var(--color-border)',
                   borderRadius: 'var(--radius-sm)',
-                  color: 'var(--color-text-primary)',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  width: '100%',
+                  color:        'var(--color-text-primary)',
+                  outline:      'none',
+                  transition:   'border-color 0.2s',
+                  width:        '100%',
                 }}
                 onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-focus)'; }}
                 onBlur={e  => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
@@ -238,7 +264,7 @@ export default function LoginPage() {
 
             {/* Remember me — sign-in only */}
             {mode === 'signin' && (
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <label data-s className="flex items-center gap-2.5 cursor-pointer select-none">
                 <div
                   role="checkbox"
                   aria-checked={rememberMe}
@@ -248,8 +274,8 @@ export default function LoginPage() {
                   className="relative flex-shrink-0 w-4 h-4 transition-all duration-150"
                   style={{
                     borderRadius: '4px',
-                    background: rememberMe ? '#ffffff' : 'transparent',
-                    border: `1.5px solid ${rememberMe ? '#ffffff' : 'rgba(255,255,255,0.22)'}`,
+                    background:   rememberMe ? '#ffffff' : 'transparent',
+                    border:       `1.5px solid ${rememberMe ? '#ffffff' : 'rgba(255,255,255,0.22)'}`,
                   }}
                 >
                   {rememberMe && (
@@ -270,10 +296,10 @@ export default function LoginPage() {
                 className="px-4 py-3 text-xs"
                 style={{
                   borderRadius: 'var(--radius-sm)',
-                  background: 'var(--red-dim)',
-                  border: '1px solid var(--red-border)',
-                  color: 'var(--red)',
-                  fontFamily: 'var(--font-sans)',
+                  background:   'var(--red-dim)',
+                  border:       '1px solid var(--red-border)',
+                  color:        'var(--red)',
+                  fontFamily:   'var(--font-sans)',
                 }}
               >
                 {error}
@@ -286,10 +312,10 @@ export default function LoginPage() {
                 className="px-4 py-3 text-xs"
                 style={{
                   borderRadius: 'var(--radius-sm)',
-                  background: 'var(--green-dim)',
-                  border: '1px solid var(--green-border)',
-                  color: 'var(--green)',
-                  fontFamily: 'var(--font-sans)',
+                  background:   'var(--green-dim)',
+                  border:       '1px solid var(--green-border)',
+                  color:        'var(--green)',
+                  fontFamily:   'var(--font-sans)',
                 }}
               >
                 {success}
@@ -298,6 +324,7 @@ export default function LoginPage() {
 
             {/* Submit */}
             <button
+              data-s
               type="submit"
               disabled={loading || !!success}
               className="btn-pill-primary w-full"
@@ -312,10 +339,11 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Footer caption */}
+        {/* Footer caption — fades in last */}
         <p
+          ref={footerRef}
           className="text-center text-xs mt-4"
-          style={{ fontFamily: 'var(--font-sans)', color: 'var(--color-text-muted)' }}
+          style={{ opacity: 0, fontFamily: 'var(--font-sans)', color: 'var(--color-text-muted)' }}
         >
           {tr.login.footer}
         </p>

@@ -15,6 +15,7 @@ export interface RobotStageHandle {
 
 interface RobotStageProps {
   keepIdle?: boolean;
+  entrance?: 'slide' | 'zoom';
 }
 
 // +54° at idle — left side of model faces camera, matching old ear-visible pose.
@@ -24,7 +25,7 @@ const Y_SESSION =  0.15;
 const BASE_Y    =  0;
 
 const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
-  ({ keepIdle = false }, ref) => {
+  ({ keepIdle = false, entrance = 'slide' }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef    = useRef<HTMLCanvasElement>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,7 +38,8 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
     useEffect(() => {
       let cancelled = false;
       const teardowns: (() => void)[] = [];
-      const idle = keepIdle;
+      const idle       = keepIdle;
+      const entranceMode = entrance;
 
       (async () => {
         const [THREE, { gsap }] = await Promise.all([
@@ -179,29 +181,50 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
         teardowns.push(() => ro.disconnect());
 
         // ── Entrance → idle or session ────────────────────────────────────
-        gsap.fromTo(
-          g.position,
-          { y: BASE_Y - 0.8 },
-          {
-            y: BASE_Y, duration: 1.4, ease: 'power3.out', delay: 0.2,
+        if (entranceMode === 'zoom') {
+          // Pop-scale in from nothing + spin on Y into idle pose
+          g.scale.setScalar(0.01);
+          g.rotation.y = Y_IDLE + 1.8;
+
+          gsap.to(g.scale, {
+            x: 1, y: 1, z: 1,
+            duration: 1.25, ease: 'back.out(1.4)', delay: 0.3,
+          });
+          gsap.to(g.rotation, {
+            y: Y_IDLE,
+            duration: 1.25, ease: 'power3.out', delay: 0.3,
             onComplete: () => {
-              if (idle) {
-                wobbleRef.current = gsap.to(g.rotation, {
-                  y: Y_IDLE + 0.08, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
-                });
-              } else {
-                gsap.to(g.rotation, {
-                  y: Y_SESSION, duration: 1.8, ease: 'power2.inOut', delay: 0.4,
-                  onComplete: () => {
-                    wobbleRef.current = gsap.to(g.rotation, {
-                      y: Y_SESSION + 0.06, duration: 5.5, yoyo: true, repeat: -1, ease: 'sine.inOut',
-                    });
-                  },
-                });
-              }
+              wobbleRef.current = gsap.to(g.rotation, {
+                y: Y_IDLE + 0.08, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
+              });
             },
-          }
-        );
+          });
+        } else {
+          // Default: slide up from below
+          gsap.fromTo(
+            g.position,
+            { y: BASE_Y - 0.8 },
+            {
+              y: BASE_Y, duration: 1.4, ease: 'power3.out', delay: 0.2,
+              onComplete: () => {
+                if (idle) {
+                  wobbleRef.current = gsap.to(g.rotation, {
+                    y: Y_IDLE + 0.08, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
+                  });
+                } else {
+                  gsap.to(g.rotation, {
+                    y: Y_SESSION, duration: 1.8, ease: 'power2.inOut', delay: 0.4,
+                    onComplete: () => {
+                      wobbleRef.current = gsap.to(g.rotation, {
+                        y: Y_SESSION + 0.06, duration: 5.5, yoyo: true, repeat: -1, ease: 'sine.inOut',
+                      });
+                    },
+                  });
+                }
+              },
+            }
+          );
+        }
       })();
 
       return () => {
