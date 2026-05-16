@@ -9,8 +9,9 @@ import {
 } from 'react';
 
 export interface RobotStageHandle {
-  setActive: () => void;
-  setIdle:   () => void;
+  setActive:  () => void;
+  setIdle:    () => void;
+  loginTurn:  () => void;
 }
 
 interface RobotStageProps {
@@ -266,7 +267,16 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
       });
     }, []);
 
-    useImperativeHandle(ref, () => ({ setActive, setIdle }), [setActive, setIdle]);
+    // Turn toward the card (right side) on successful login, no wobble after
+    const loginTurn = useCallback(() => {
+      const gsap = gsapRef.current;
+      const g    = robotRef.current;
+      if (!gsap || !g) return;
+      wobbleRef.current?.kill();
+      gsap.to(g.rotation, { y: -0.55, duration: 0.9, ease: 'power3.inOut' });
+    }, []);
+
+    useImperativeHandle(ref, () => ({ setActive, setIdle, loginTurn }), [setActive, setIdle, loginTurn]);
 
     return (
       <section

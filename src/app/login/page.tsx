@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
-import RobotStage from '@/components/RobotStage';
+import RobotStage, { type RobotStageHandle } from '@/components/RobotStage';
 
 export default function LoginPage() {
   const [mode, setMode]         = useState<'signin' | 'signup'>('signin');
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState('');
 
+  const robotRef  = useRef<RobotStageHandle>(null);
   const titleRef  = useRef<HTMLDivElement>(null);
   const cardRef   = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLParagraphElement>(null);
@@ -72,6 +73,8 @@ export default function LoginPage() {
         if (error) throw error;
         localStorage.setItem('rr-remember-me', rememberMe ? 'true' : 'false');
         sessionStorage.setItem('rr-tab-session', '1');
+        robotRef.current?.loginTurn();
+        await new Promise(r => setTimeout(r, 700));
         router.push('/');
         router.refresh();
       } else {
@@ -102,23 +105,31 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-grid min-h-dvh flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <div className="bg-grid min-h-dvh overflow-hidden flex relative">
 
-      {/* Full-screen robot — zoom entrance */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <RobotStage keepIdle entrance="zoom" />
+      {/* Robot — absolute behind card on mobile, left flex column on desktop */}
+      <div
+        className="absolute inset-0 md:relative md:inset-auto md:flex-1"
+        style={{ zIndex: 0 }}
+      >
+        <RobotStage ref={robotRef} keepIdle entrance="zoom" />
       </div>
-
-      {/* Radial glow between robot and card */}
-      <div className="hero-glow" aria-hidden style={{ zIndex: 1 }} />
 
       {/* Language toggle */}
       <div className="absolute top-4 right-4" style={{ zIndex: 20 }}>
         <LanguageToggle />
       </div>
 
-      {/* Content wrapper */}
-      <div className="relative w-full" style={{ maxWidth: '360px', zIndex: 10 }}>
+      {/* Card column — full-width overlay on mobile, fixed right panel on desktop */}
+      <div
+        className="relative flex flex-col items-center justify-center w-full px-5 py-10 md:w-[420px] md:flex-none md:border-l"
+        style={{
+          zIndex: 10,
+          borderColor: 'rgba(255,255,255,0.06)',
+          background: 'transparent',
+        }}
+      >
+        <div className="w-full" style={{ maxWidth: '360px' }}>
 
         {/* App name — fades in first */}
         <div
@@ -347,7 +358,8 @@ export default function LoginPage() {
         >
           {tr.login.footer}
         </p>
-      </div>
+        </div>{/* maxWidth wrapper */}
+      </div>{/* card column */}
     </div>
   );
 }
