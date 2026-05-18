@@ -203,11 +203,10 @@ export default function LoginPage() {
 
       {/* Card column — full-width overlay on mobile, fixed right panel on desktop */}
       <div
-        className="relative flex flex-col items-center justify-center w-full px-5 py-10 md:w-[420px] md:flex-none md:border-l"
+        className="relative flex flex-col items-center justify-center w-full px-5 py-10 bg-black md:bg-transparent md:w-[420px] md:flex-none md:border-l"
         style={{
           zIndex: 10,
           borderColor: 'rgba(255,255,255,0.06)',
-          background: 'transparent',
         }}
       >
         <div className="w-full" style={{ maxWidth: '360px' }}>
@@ -227,7 +226,7 @@ export default function LoginPage() {
               letterSpacing: '-0.01em',
             }}
           >
-            RiskRadar AI
+            BetSense
           </h1>
           <p
             className="text-xs mt-1"
