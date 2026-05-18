@@ -87,7 +87,7 @@ export default function ReplyColumn({ messages, isStreaming, onQuickAction }: Re
           style={{ paddingBottom: '8px', width: '100%' }}
         >
           {/* Description */}
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 reply-empty-header">
             <span style={{
               fontFamily:    'var(--font-sans)',
               fontSize:      '10px',
