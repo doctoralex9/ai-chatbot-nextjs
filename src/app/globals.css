@@ -949,3 +949,18 @@ body {
   grid-template-columns: 1fr 1fr;
   gap:                   6px;
 }
+
+/* Login card column: top-aligned on mobile (no dead space above form),
+   vertically centred on desktop where the robot fills the left panel. */
+.login-col {
+  justify-content: flex-start;
+  padding-top:     80px;
+  padding-bottom:  40px;
+}
+@media (min-width: 768px) {
+  .login-col {
+    justify-content: center;
+    padding-top:     40px;
+    padding-bottom:  40px;
+  }
+}

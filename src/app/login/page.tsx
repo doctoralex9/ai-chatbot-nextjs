@@ -203,7 +203,7 @@ export default function LoginPage() {
 
       {/* Card column — full-width overlay on mobile, fixed right panel on desktop */}
       <div
-        className="relative flex flex-col items-center justify-center w-full px-5 py-10 bg-black md:bg-transparent md:w-[420px] md:flex-none md:border-l"
+        className="login-col relative flex flex-col items-center w-full px-5 bg-black md:bg-transparent md:w-[420px] md:flex-none md:border-l"
         style={{
           zIndex: 10,
           borderColor: 'rgba(255,255,255,0.06)',
