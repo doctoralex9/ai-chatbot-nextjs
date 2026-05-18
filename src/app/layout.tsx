@@ -47,8 +47,8 @@ const geistMono = Geist_Mono({
  */
 export const metadata: Metadata = {
   title: {
-    default: "RiskRadar AI — Betting Risk Analysis",
-    template: "%s | RiskRadar AI",
+    default: "BetSense — Betting Risk Analysis",
+    template: "%s | BetSense",
   },
   description:
     "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis — before you place a single stake.",
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
     "odds comparison",
     "risk assessment",
   ],
-  authors: [{ name: "RiskRadar AI Team" }],
-  creator: "RiskRadar AI",
-  publisher: "RiskRadar AI",
+  authors: [{ name: "BetSense Team" }],
+  creator: "BetSense",
+  publisher: "BetSense",
   robots: {
     index: true,
     follow: true,
@@ -77,14 +77,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://wagerwizard.com",
-    title: "RiskRadar AI — Betting Risk Analysis",
+    title: "BetSense — Betting Risk Analysis",
     description:
       "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis.",
-    siteName: "RiskRadar AI",
+    siteName: "BetSense",
   },
   twitter: {
     card: "summary_large_image",
-    title: "RiskRadar AI — Betting Risk Analysis",
+    title: "BetSense — Betting Risk Analysis",
     description:
       "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis.",
   },

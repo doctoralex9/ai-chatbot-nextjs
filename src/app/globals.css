@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ══════════════════════════════════════════════════
-   RISKRADAR AI — DESIGN SYSTEM v4
+   BETSENSE — DESIGN SYSTEM v4
    Cyberpunk blueprint aesthetic · Orbitron + Inter
    ══════════════════════════════════════════════════ */
 
@@ -61,7 +61,7 @@
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* ══════════════════════════════════════════════
-     RISKRADAR AI — NEW UI TOKENS
+     BETSENSE — NEW UI TOKENS
      Everything below drives the robot/chat layout.
      Old tokens above remain for backward-compat
      with components not yet rebuilt.

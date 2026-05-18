@@ -46,7 +46,7 @@ export default function Loader() {
       </div>
 
       <div className="text-center">
-        <p className="text-sm font-semibold text-gradient tracking-wide">RiskRadar AI</p>
+        <p className="text-sm font-semibold text-gradient tracking-wide">BetSense</p>
         <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-4)' }}>Φόρτωση συνεδρίας…</p>
       </div>
 

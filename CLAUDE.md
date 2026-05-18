@@ -1,4 +1,4 @@
-# RiskRadar AI — CLAUDE.md
+# BetSense — CLAUDE.md
 
 ## What this project is
 
