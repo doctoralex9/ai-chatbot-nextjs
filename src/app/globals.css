@@ -907,12 +907,41 @@ body {
   .chat-col-history { display: block; order: 0; }
 }
 
-/* Reply card: deep glass on mobile/tablet so the robot shows through */
+/* Mobile/tablet (< 1024px): vertical stack — robot occupies top 60%, replies below */
 @media (max-width: 1023px) {
-  .reply-card {
-    background:           rgba(5, 5, 10, 0.48);
-    backdrop-filter:      blur(26px) saturate(160%);
-    -webkit-backdrop-filter: blur(26px) saturate(160%);
-    border-color:         rgba(255, 255, 255, 0.07);
+  .chat-grid {
+    grid-template-rows: 3fr 2fr;
   }
+
+  /* Take robot out of full-bleed absolute — it lives in the top row */
+  .chat-col-robot {
+    position:       relative;
+    inset:          unset;
+    z-index:        auto;
+    pointer-events: auto;
+    grid-row:       1;
+  }
+
+  /* Replies occupy the bottom row, no longer overlaying the face */
+  .chat-col-replies {
+    z-index:    auto;
+    grid-row:   2;
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Reply cards in their own section — lighter glass since they're not over the robot */
+  .reply-card {
+    background:               rgba(5, 5, 10, 0.55);
+    backdrop-filter:          blur(16px) saturate(140%);
+    -webkit-backdrop-filter:  blur(16px) saturate(140%);
+    border-color:             rgba(255, 255, 255, 0.07);
+  }
+
+}
+
+/* Quick action chips: 2-column grid so all 5 fit without scrolling */
+.quick-chips-list {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   6px;
 }

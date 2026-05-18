@@ -119,33 +119,35 @@ export default function ReplyColumn({ messages, isStreaming, onQuickAction }: Re
               }}>
                 {tr.quickHint}
               </span>
-              <div className="flex flex-col gap-1.5">
+              <div className="quick-chips-list">
                 {tr.quickActions.map(a => (
                   <button
                     key={a.label}
                     onClick={() => onQuickAction(a.message)}
                     style={{
-                      textAlign:    'left',
-                      background:   'rgba(255,255,255,0.03)',
-                      border:       '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding:      '7px 11px',
-                      fontFamily:   'var(--font-sans)',
-                      fontSize:     '11px',
-                      color:        'var(--color-text-secondary)',
-                      cursor:       'pointer',
-                      lineHeight:   1.4,
-                      transition:   'background 0.15s, border-color 0.15s',
+                      textAlign:          'left',
+                      background:         'rgba(255,255,255,0.08)',
+                      backdropFilter:     'blur(12px) saturate(120%)',
+                      WebkitBackdropFilter: 'blur(12px) saturate(120%)',
+                      border:             '1px solid rgba(255,255,255,0.14)',
+                      borderRadius:       'var(--radius-sm)',
+                      padding:            '7px 11px',
+                      fontFamily:         'var(--font-sans)',
+                      fontSize:           '11px',
+                      color:              'rgba(255,255,255,0.82)',
+                      cursor:             'pointer',
+                      lineHeight:         1.4,
+                      transition:         'background 0.15s, border-color 0.15s',
                     }}
                     onMouseEnter={e => {
                       const el = e.currentTarget as HTMLButtonElement;
-                      el.style.background   = 'rgba(255,255,255,0.07)';
-                      el.style.borderColor  = 'rgba(255,255,255,0.18)';
+                      el.style.background  = 'rgba(255,255,255,0.14)';
+                      el.style.borderColor = 'rgba(255,255,255,0.26)';
                     }}
                     onMouseLeave={e => {
                       const el = e.currentTarget as HTMLButtonElement;
-                      el.style.background  = 'rgba(255,255,255,0.03)';
-                      el.style.borderColor = 'var(--color-border)';
+                      el.style.background  = 'rgba(255,255,255,0.08)';
+                      el.style.borderColor = 'rgba(255,255,255,0.14)';
                     }}
                   >
                     {a.label}
