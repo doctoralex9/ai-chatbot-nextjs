@@ -19,11 +19,13 @@ interface RobotStageProps {
   entrance?: 'slide' | 'zoom';
 }
 
-// 0° idle and session — robot faces the user directly (face to face).
-// Subtle wobble (±0.07 rad) adds life without turning away.
-const Y_IDLE    = 0.0;
-const Y_SESSION = 0.0;
-const BASE_Y    =  0;
+// Login page: face turned right (profile toward the login card on the right).
+// Chat page idle: face turned left (toward the user / reply column).
+// Chat page active: slightly less turned so it feels like the AI is "looking up".
+const Y_LOGIN        = -0.75;   // right profile — login idle
+const Y_CHAT_IDLE    =  0.50;   // left-facing  — chat idle
+const Y_CHAT_ACTIVE  =  0.30;   // forward-ish  — while AI is responding
+const BASE_Y         =  0;
 
 const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
   ({ keepIdle = false, entrance = 'slide' }, ref) => {
@@ -159,7 +161,7 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
         // Wrap in a group so all GSAP tweens target one stable ref
         const g = new THREE.Group();
         g.add(model);
-        g.rotation.y = Y_IDLE;
+        g.rotation.y = 0;
         g.position.set(0, BASE_Y, 0);
         scene.add(g);
         robotRef.current = g;
@@ -184,45 +186,36 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
 
         // ── Entrance → idle or session ────────────────────────────────────
         if (entranceMode === 'zoom') {
-          // Pop-scale in from nothing + spin on Y into idle pose
+          // Login page: pop-scale in and spin to land facing RIGHT (toward the card).
           g.scale.setScalar(0.01);
-          g.rotation.y = Y_IDLE + 1.8;
+          g.rotation.y = Y_LOGIN + 1.8;   // start spinning from the right
 
           gsap.to(g.scale, {
             x: 1, y: 1, z: 1,
             duration: 1.25, ease: 'back.out(1.4)', delay: 0.3,
           });
           gsap.to(g.rotation, {
-            y: Y_IDLE,
+            y: Y_LOGIN,                   // land in right-profile pose
             duration: 1.25, ease: 'power3.out', delay: 0.3,
             onComplete: () => {
+              // Subtle wobble: leans slightly toward forward, then back — keeps it alive
               wobbleRef.current = gsap.to(g.rotation, {
-                y: Y_IDLE + 0.08, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
+                y: Y_LOGIN + 0.08, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
               });
             },
           });
         } else {
-          // Default: slide up from below
+          // Chat page: slide up from below, settle facing LEFT (toward the user).
+          g.rotation.y = Y_CHAT_IDLE;     // already facing left when it arrives
           gsap.fromTo(
             g.position,
             { y: BASE_Y - 0.8 },
             {
               y: BASE_Y, duration: 1.4, ease: 'power3.out', delay: 0.2,
               onComplete: () => {
-                if (idle) {
-                  wobbleRef.current = gsap.to(g.rotation, {
-                    y: Y_IDLE + 0.08, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
-                  });
-                } else {
-                  gsap.to(g.rotation, {
-                    y: Y_SESSION, duration: 1.8, ease: 'power2.inOut', delay: 0.4,
-                    onComplete: () => {
-                      wobbleRef.current = gsap.to(g.rotation, {
-                        y: Y_SESSION + 0.06, duration: 5.5, yoyo: true, repeat: -1, ease: 'sine.inOut',
-                      });
-                    },
-                  });
-                }
+                wobbleRef.current = gsap.to(g.rotation, {
+                  y: Y_CHAT_IDLE + 0.07, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
+                });
               },
             }
           );
@@ -237,43 +230,46 @@ const RobotStage = forwardRef<RobotStageHandle, RobotStageProps>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // AI is responding — turn slightly toward forward so it feels like "thinking"
     const setActive = useCallback(() => {
       const gsap = gsapRef.current;
       const g    = robotRef.current;
       if (!gsap || !g) return;
       wobbleRef.current?.kill();
       gsap.to(g.rotation, {
-        y: Y_SESSION, duration: 1.1, ease: 'power2.inOut',
+        y: Y_CHAT_ACTIVE, duration: 1.1, ease: 'power2.inOut',
         onComplete: () => {
           wobbleRef.current = gsap.to(g.rotation, {
-            y: Y_SESSION + 0.06, duration: 5.5, yoyo: true, repeat: -1, ease: 'sine.inOut',
+            y: Y_CHAT_ACTIVE + 0.06, duration: 5.5, yoyo: true, repeat: -1, ease: 'sine.inOut',
           });
         },
       });
     }, []);
 
+    // AI done — return to facing the user (left)
     const setIdle = useCallback(() => {
       const gsap = gsapRef.current;
       const g    = robotRef.current;
       if (!gsap || !g) return;
       wobbleRef.current?.kill();
       gsap.to(g.rotation, {
-        y: Y_IDLE, duration: 1.5, ease: 'power2.inOut',
+        y: Y_CHAT_IDLE, duration: 1.5, ease: 'power2.inOut',
         onComplete: () => {
           wobbleRef.current = gsap.to(g.rotation, {
-            y: Y_IDLE + 0.08, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
+            y: Y_CHAT_IDLE + 0.07, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut',
           });
         },
       });
     }, []);
 
-    // Turn toward the card (right side) on successful login, no wobble after
+    // Login success: sweep from right-profile all the way to left-facing —
+    // the cinematic "I'm welcoming you into the app" turn.
     const loginTurn = useCallback(() => {
       const gsap = gsapRef.current;
       const g    = robotRef.current;
       if (!gsap || !g) return;
       wobbleRef.current?.kill();
-      gsap.to(g.rotation, { y: -0.55, duration: 0.9, ease: 'power3.inOut' });
+      gsap.to(g.rotation, { y: Y_CHAT_IDLE, duration: 0.85, ease: 'power3.inOut' });
     }, []);
 
     useImperativeHandle(ref, () => ({ setActive, setIdle, loginTurn }), [setActive, setIdle, loginTurn]);

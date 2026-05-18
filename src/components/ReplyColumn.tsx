@@ -3,10 +3,12 @@
 import { useEffect, useRef } from 'react';
 import type { UIMessage } from '@ai-sdk/react';
 import ReplyCard from './ReplyCard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ReplyColumnProps {
-  messages:    UIMessage[];
-  isStreaming: boolean;
+  messages:       UIMessage[];
+  isStreaming:    boolean;
+  onQuickAction?: (msg: string) => void;
 }
 
 function extractText(msg: UIMessage): string | null {
@@ -25,7 +27,8 @@ function extractText(msg: UIMessage): string | null {
   return null;
 }
 
-export default function ReplyColumn({ messages, isStreaming }: ReplyColumnProps) {
+export default function ReplyColumn({ messages, isStreaming, onQuickAction }: ReplyColumnProps) {
+  const { tr } = useLanguage();
   const bottomRef  = useRef<HTMLDivElement>(null);
   const columnRef  = useRef<HTMLDivElement>(null);
 
@@ -80,18 +83,77 @@ export default function ReplyColumn({ messages, isStreaming }: ReplyColumnProps)
       {/* Empty state */}
       {assistantMessages.length === 0 && !isStreaming && (
         <div
-          className="flex flex-col items-start gap-2 mt-auto"
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize:   '12px',
-            color:      'var(--color-text-muted)',
-            paddingBottom: '8px',
-          }}
+          className="flex flex-col items-start gap-4 m-auto"
+          style={{ paddingBottom: '8px', width: '100%' }}
         >
-          <span style={{ letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '10px' }}>
-            Replies
-          </span>
-          <span>AI responses will appear here.</span>
+          {/* Description */}
+          <div className="flex flex-col gap-1.5">
+            <span style={{
+              fontFamily:    'var(--font-sans)',
+              fontSize:      '10px',
+              fontWeight:    600,
+              letterSpacing: '0.10em',
+              textTransform: 'uppercase',
+              color:         'var(--color-text-muted)',
+            }}>
+              Replies
+            </span>
+            <p style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize:   '12px',
+              color:      'var(--color-text-secondary)',
+              lineHeight: 1.6,
+            }}>
+              {tr.emptyDesc}
+            </p>
+          </div>
+
+          {/* Quick action chips */}
+          {onQuickAction && (
+            <div className="flex flex-col gap-2 w-full">
+              <span style={{
+                fontFamily:    'var(--font-sans)',
+                fontSize:      '10px',
+                letterSpacing: '0.06em',
+                color:         'var(--color-text-muted)',
+              }}>
+                {tr.quickHint}
+              </span>
+              <div className="flex flex-col gap-1.5">
+                {tr.quickActions.map(a => (
+                  <button
+                    key={a.label}
+                    onClick={() => onQuickAction(a.message)}
+                    style={{
+                      textAlign:    'left',
+                      background:   'rgba(255,255,255,0.03)',
+                      border:       '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding:      '7px 11px',
+                      fontFamily:   'var(--font-sans)',
+                      fontSize:     '11px',
+                      color:        'var(--color-text-secondary)',
+                      cursor:       'pointer',
+                      lineHeight:   1.4,
+                      transition:   'background 0.15s, border-color 0.15s',
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLButtonElement;
+                      el.style.background   = 'rgba(255,255,255,0.07)';
+                      el.style.borderColor  = 'rgba(255,255,255,0.18)';
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLButtonElement;
+                      el.style.background  = 'rgba(255,255,255,0.03)';
+                      el.style.borderColor = 'var(--color-border)';
+                    }}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

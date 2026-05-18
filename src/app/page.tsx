@@ -299,7 +299,21 @@ export default function Chatbot() {
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="text-4xl mb-4">⛔</div>
+            <div
+              className="flex items-center justify-center mb-4"
+              style={{
+                width: '48px', height: '48px', margin: '0 auto 16px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--red-dim)',
+                border: '1px solid var(--red-border)',
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                   stroke="var(--red)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M4.93 4.93l14.14 14.14" />
+              </svg>
+            </div>
             <h2
               className="text-xl font-extrabold mb-2 tracking-tight"
               style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}
@@ -367,7 +381,11 @@ export default function Chatbot() {
         <div className="chat-grid">
           {/* Left / mobile-bottom: AI reply cards */}
           <div className="chat-col-replies">
-            <ReplyColumn messages={messages} isStreaming={isStreaming} />
+            <ReplyColumn
+              messages={messages}
+              isStreaming={isStreaming}
+              onQuickAction={(msg) => setInput(msg)}
+            />
           </div>
 
           {/* Center / mobile-top: Three.js robot */}
@@ -395,8 +413,31 @@ export default function Chatbot() {
           }}
         >
           <div style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
-            <div style={{ padding: '10px 16px 6px' }}>
+            <div style={{ padding: '10px 16px 6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <WarningBanner />
+              {!isSuperuser && (
+                <button
+                  onClick={() => { if (usageCount >= FREE_LIMIT) setShowPaywall(true); }}
+                  title={`${usageCount} / ${FREE_LIMIT} free analyses used`}
+                  style={{
+                    flexShrink:    0,
+                    background:    usageCount >= FREE_LIMIT ? 'var(--red-dim)' : 'rgba(255,255,255,0.05)',
+                    border:        `1px solid ${usageCount >= FREE_LIMIT ? 'var(--red-border)' : 'var(--color-border)'}`,
+                    borderRadius:  'var(--radius-pill)',
+                    padding:       '3px 10px',
+                    fontSize:      '11px',
+                    fontFamily:    'var(--font-sans)',
+                    letterSpacing: '0.03em',
+                    fontWeight:    600,
+                    color:         usageCount >= FREE_LIMIT ? 'var(--red)' : 'var(--color-text-secondary)',
+                    cursor:        usageCount >= FREE_LIMIT ? 'pointer' : 'default',
+                    whiteSpace:    'nowrap',
+                    transition:    'background 0.15s',
+                  }}
+                >
+                  {usageCount} / {FREE_LIMIT}
+                </button>
+              )}
             </div>
             <InputForm
               value={input}

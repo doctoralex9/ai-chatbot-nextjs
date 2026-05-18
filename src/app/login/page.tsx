@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const robotRef  = useRef<RobotStageHandle>(null);
   const titleRef  = useRef<HTMLDivElement>(null);
@@ -98,14 +100,36 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (forgotLoading) return;
+    if (!email.trim()) {
+      setForgotMessage({ type: 'error', text: tr.login.forgotPasswordNoEmail });
+      return;
+    }
+    setForgotLoading(true);
+    setForgotMessage(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+      });
+      if (error) throw error;
+      setForgotMessage({ type: 'success', text: tr.login.forgotPasswordSuccess });
+    } catch {
+      setForgotMessage({ type: 'error', text: tr.login.errDefault });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const switchMode = (m: 'signin' | 'signup') => {
     setMode(m);
     setError('');
     setSuccess('');
+    setForgotMessage(null);
   };
 
   return (
-    <div className="bg-grid min-h-dvh overflow-hidden flex relative">
+    <div className="bg-grid overflow-hidden flex relative" style={{ height: '100dvh' }}>
 
       {/* Robot — absolute behind card on mobile, left flex column on desktop */}
       <div
@@ -113,6 +137,63 @@ export default function LoginPage() {
         style={{ zIndex: 0 }}
       >
         <RobotStage ref={robotRef} keepIdle entrance="zoom" />
+
+        {/* Tagline overlay — desktop only, reveals after robot entrance */}
+        <div
+          className="hidden md:flex flex-col justify-end pointer-events-none"
+          style={{ position: 'absolute', inset: 0, padding: '0 0 40px 40px', zIndex: 5 }}
+        >
+          <div
+            className="reveal-up"
+            style={{ animationDelay: '1.2s', maxWidth: '340px' }}
+          >
+            <div style={{
+              background:           'rgba(0,0,0,0.52)',
+              backdropFilter:       'blur(22px) saturate(130%)',
+              WebkitBackdropFilter: 'blur(22px) saturate(130%)',
+              border:               '1px solid rgba(255,255,255,0.09)',
+              borderRadius:         'var(--radius-lg)',
+              padding:              '18px 22px',
+            }}>
+              <p style={{
+                fontFamily:    'var(--font-display)',
+                fontSize:      '14px',
+                fontWeight:    700,
+                color:         'var(--color-text-primary)',
+                letterSpacing: '-0.01em',
+                lineHeight:    1.3,
+                marginBottom:  '8px',
+              }}>
+                {tr.login.tagline}
+              </p>
+              <p style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize:   '12px',
+                color:      'var(--color-text-secondary)',
+                lineHeight: 1.6,
+                marginBottom: '14px',
+              }}>
+                {tr.emptyDesc}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {tr.features.map(f => (
+                  <span key={f.title} style={{
+                    background:    'rgba(255,255,255,0.05)',
+                    border:        '1px solid rgba(255,255,255,0.10)',
+                    borderRadius:  'var(--radius-pill)',
+                    padding:       '3px 10px',
+                    fontSize:      '10px',
+                    letterSpacing: '0.04em',
+                    color:         'var(--color-text-secondary)',
+                    fontFamily:    'var(--font-sans)',
+                  }}>
+                    {f.title}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Language toggle */}
@@ -165,10 +246,10 @@ export default function LoginPage() {
           ref={cardRef}
           style={{
             opacity:              0,
-            background:           'rgba(6, 6, 10, 0.35)',
+            background:           'rgba(6, 6, 10, 0.05)',
             border:               '1px solid rgba(255,255,255,0.13)',
             borderRadius:         'var(--radius-lg)',
-            backdropFilter:       'blur(28px) saturate(150%)',
+            backdropFilter:       'blur(4px) saturate(150%)',
             WebkitBackdropFilter: 'blur(28px) saturate(150%)',
             padding:              '32px',
           }}
@@ -347,6 +428,47 @@ export default function LoginPage() {
                 ? tr.login.btnSignin
                 : tr.login.btnSignup}
             </button>
+
+            {/* Forgot password — sign-in mode only */}
+            {mode === 'signin' && (
+              <div data-s style={{ textAlign: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={forgotLoading}
+                  style={{
+                    background:      'none',
+                    border:          'none',
+                    cursor:          forgotLoading ? 'default' : 'pointer',
+                    fontFamily:      'var(--font-sans)',
+                    fontSize:        '11px',
+                    color:           'var(--color-text-muted)',
+                    textDecoration:  'underline',
+                    textDecorationColor: 'rgba(255,255,255,0.15)',
+                    transition:      'color 0.15s',
+                    padding:         '4px',
+                  }}
+                  onMouseEnter={e => { if (!forgotLoading) (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-secondary)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; }}
+                >
+                  {forgotLoading ? '…' : tr.login.forgotPassword}
+                </button>
+                {forgotMessage && (
+                  <div style={{
+                    marginTop:    '6px',
+                    padding:      '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background:   forgotMessage.type === 'success' ? 'var(--green-dim)' : 'var(--red-dim)',
+                    border:       `1px solid ${forgotMessage.type === 'success' ? 'var(--green-border)' : 'var(--red-border)'}`,
+                    color:        forgotMessage.type === 'success' ? 'var(--green)' : 'var(--red)',
+                    fontFamily:   'var(--font-sans)',
+                    fontSize:     '11px',
+                  }}>
+                    {forgotMessage.text}
+                  </div>
+                )}
+              </div>
+            )}
           </form>
         </div>
 

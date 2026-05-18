@@ -25,6 +25,10 @@
 *.pem
 long-term-plan.md
 
+# screenshots & playwright output
+/screenshots
+/.playwright-mcp
+
 # debug
 npm-debug.log*
 yarn-debug.log*
