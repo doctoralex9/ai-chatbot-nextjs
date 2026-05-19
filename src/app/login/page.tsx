@@ -228,16 +228,6 @@ export default function LoginPage() {
           >
             BetSense
           </h1>
-          <p
-            className="text-xs mt-1"
-            style={{
-              fontFamily:    'var(--font-sans)',
-              color:         'var(--color-text-secondary)',
-              letterSpacing: '0.04em',
-            }}
-          >
-            {tr.login.subtitle}
-          </p>
         </div>
 
         {/* Card shell — slides in after title */}
