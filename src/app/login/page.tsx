@@ -203,7 +203,7 @@ export default function LoginPage() {
 
       {/* Card column — full-width overlay on mobile, fixed right panel on desktop */}
       <div
-        className="login-col relative flex flex-col items-center w-full px-5 bg-black md:bg-transparent md:w-[420px] md:flex-none md:border-l"
+        className="login-col relative flex flex-col items-center w-full px-5 md:w-[420px] md:flex-none md:border-l"
         style={{
           zIndex: 10,
           borderColor: 'rgba(255,255,255,0.06)',
@@ -245,11 +245,11 @@ export default function LoginPage() {
           ref={cardRef}
           style={{
             opacity:              0,
-            background:           'rgba(6, 6, 10, 0.05)',
-            border:               '1px solid rgba(255,255,255,0.13)',
+            background:           'rgba(0, 0, 8, 0.72)',
+            border:               '1px solid rgba(255,255,255,0.18)',
             borderRadius:         'var(--radius-lg)',
-            backdropFilter:       'blur(4px) saturate(150%)',
-            WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+            backdropFilter:       'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             padding:              '32px',
           }}
         >
