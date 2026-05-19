@@ -245,10 +245,10 @@ export default function LoginPage() {
           ref={cardRef}
           style={{
             opacity:              0,
-            background:           'rgba(0, 0, 8, 0.72)',
+            background:           'rgba(0, 0, 8, 0.1)',
             border:               '1px solid rgba(255,255,255,0.18)',
             borderRadius:         'var(--radius-lg)',
-            backdropFilter:       'blur(20px) saturate(180%)',
+            backdropFilter:       'blur(2px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             padding:              '32px',
           }}
