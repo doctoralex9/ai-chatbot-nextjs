@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StatusBarProps {
@@ -76,6 +77,24 @@ export default function StatusBar({
           </button>
         ))}
       </div>
+
+      <Separator />
+
+      {/* ── Privacy link ─────────────────────────────── */}
+      <Link
+        href="/privacy"
+        style={{
+          fontSize: '10px',
+          fontWeight: 500,
+          letterSpacing: '0.04em',
+          fontFamily: 'var(--font-sans)',
+          color: 'var(--color-text-muted)',
+          textDecoration: 'none',
+          flexShrink: 0,
+        }}
+      >
+        Privacy
+      </Link>
 
       <Separator />
 
