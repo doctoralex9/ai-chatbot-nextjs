@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter, Orbitron } from "next/font/google";
 import { cookies } from "next/headers";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Lang } from "@/lib/i18n";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 /**
@@ -131,6 +132,7 @@ export default async function RootLayout({
         <LanguageProvider initialLang={initialLang}>
           {children}
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
