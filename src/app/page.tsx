@@ -35,6 +35,7 @@ export default function Chatbot() {
   const [attachmentFile, setAttachmentFile]       = useState<File | null>(null);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState('');
   const [uploadError, setUploadError]             = useState('');
+  const [chatError, setChatError]                 = useState('');
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isDragOver, setIsDragOver]               = useState(false);
 
@@ -55,7 +56,7 @@ export default function Chatbot() {
 
   const { messages, setMessages, sendMessage, status, error, stop } = useChat({
     transport,
-    onError: (err) => console.error('[useChat error]', err),
+    onError: (err) => { console.error('[useChat error]', err); setChatError(err.message); },
   });
 
   const isStreaming = status === 'streaming';
@@ -195,6 +196,7 @@ export default function Chatbot() {
     e.preventDefault();
     if ((input.trim().length === 0 && !attachmentFile) || isStreaming) return;
     if (usageCount >= FREE_LIMIT && !isSuperuser) { setShowPaywall(true); return; }
+    setChatError('');
 
     const currentInput = input.trim();
     const currentFile  = attachmentFile;
@@ -452,7 +454,7 @@ export default function Chatbot() {
               attachmentPreviewUrl={attachmentPreviewUrl}
               attachmentFileName={attachmentFile?.name}
               onRemoveAttachment={() => setAttachmentFile(null)}
-              uploadError={uploadError}
+              uploadError={uploadError || chatError}
             />
           </div>
         </div>
