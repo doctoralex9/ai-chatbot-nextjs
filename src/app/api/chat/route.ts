@@ -8,6 +8,9 @@ import { analyzeBet } from '@/lib/betAnalysis';
 
 const FREE_LIMIT = 5;
 
+const oddsCache = new Map<string, { data: string; expiry: number }>();
+const ODDS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 const SUPERUSER_EMAILS = (process.env.SUPERUSER_EMAIL ?? '')
   .split(',').map(e => e.trim()).filter(Boolean);
 
@@ -64,6 +67,10 @@ The AI MUST filter the returned data to find specific matches/teams requested by
       return 'N/A';
     };
 
+    const cacheKey = `${apiSport}:${apiRegion}`;
+    const cached = oddsCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiry) return cached.data;
+
     try {
       const controller = new AbortController();
       const timeoutId  = setTimeout(() => controller.abort(), 10000);
@@ -117,12 +124,14 @@ The AI MUST filter the returned data to find specific matches/teams requested by
         return { matchup: `${homeTeam} vs ${awayTeam}`, commence_time, best_odds: { home: bestHome, draw: bestDraw, away: bestAway }, market_overround_pct: overroundPct, bookmaker_odds };
       }).filter(Boolean) : [];
 
-      return JSON.stringify({
+      const result = JSON.stringify({
         source_league: apiSport,
         source_region: apiRegion,
         note: 'best_odds = highest odds across all bookmakers. market_overround_pct: 100% = no margin, 105% = 5% vig.',
         matches,
       });
+      oddsCache.set(cacheKey, { data: result, expiry: Date.now() + ODDS_CACHE_TTL });
+      return result;
     } catch (error: unknown) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') return 'TIMEOUT: The odds API is taking too long. Please try again.';
@@ -243,6 +252,17 @@ export async function POST(req: Request) {
     // ── 3. Parse request body ───────────────────────────────────────────────
     const { messages, lang }: { messages: UIMessage[]; lang?: string } = await req.json();
 
+    const lastMsg = messages[messages.length - 1];
+    const msgText = Array.isArray(lastMsg?.parts)
+      ? (lastMsg.parts as Array<{ type: string; text?: string }>)
+          .filter(p => p.type === 'text')
+          .map(p => p.text ?? '')
+          .join('')
+      : '';
+    if (msgText.length > 2500) {
+      return new Response('Message too long (max 2500 characters).', { status: 400 });
+    }
+
     const controller = new AbortController();
     const timeoutId  = setTimeout(() => controller.abort(), 55000);
 
@@ -358,6 +378,7 @@ EPL (soccer_epl), La Liga (soccer_spain_la_liga), Bundesliga (soccer_germany_bun
 
         tools: { getUpcomingFootballOdds, analyzeBetRisk },
         stopWhen: stepCountIs(5),
+        maxOutputTokens: 700,
         temperature: 0.85,
       });
 
