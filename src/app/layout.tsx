@@ -77,7 +77,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://ai-chatbot-nextjs-git-main-alexs-projects-3987b915.vercel.app/",
+    url: "https://ai-chatbot-nextjs-navy.vercel.app/",
     title: "BetSense — Betting Risk Analysis",
     description:
       "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis.",
