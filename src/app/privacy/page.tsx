@@ -64,8 +64,8 @@ export default function PrivacyPage() {
           <p>
             BetSense (&ldquo;we&rdquo;, &ldquo;us&rdquo;) is a betting risk analysis tool operated as an independent project.
             For any privacy-related enquiries please contact us at{' '}
-            <a href="mailto:doctoralex9@gmail.com" style={{ color: 'var(--color-text-primary)' }}>
-              doctoralex9@gmail.com
+            <a href="mailto:asyncdev2026@gmail.com" style={{ color: 'var(--color-text-primary)' }}>
+              asyncdev2026@gmail.com
             </a>.
           </p>
         </Section>
@@ -119,8 +119,8 @@ export default function PrivacyPage() {
         <Section title="5. Data retention">
           <p>
             Chat history and uploaded images are retained for as long as your account is active. If you wish to have your data deleted, contact us at{' '}
-            <a href="mailto:doctoralex9@gmail.com" style={{ color: 'var(--color-text-primary)' }}>
-              doctoralex9@gmail.com
+            <a href="mailto:asyncdev2026@gmail.com" style={{ color: 'var(--color-text-primary)' }}>
+              asyncdev2026@gmail.com
             </a>{' '}
             and we will delete it within 30 days.
           </p>
@@ -138,8 +138,8 @@ export default function PrivacyPage() {
           </ul>
           <p>
             To exercise any of these rights, contact us at{' '}
-            <a href="mailto:doctoralex9@gmail.com" style={{ color: 'var(--color-text-primary)' }}>
-              doctoralex9@gmail.com
+            <a href="mailto:asyncdev2026@gmail.com" style={{ color: 'var(--color-text-primary)' }}>
+              asyncdev2026@gmail.com
             </a>.
             You also have the right to lodge a complaint with your local supervisory authority (in Greece:{' '}
             <a href="https://www.dpa.gr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-primary)' }}>
