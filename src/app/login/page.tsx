@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [success, setSuccess] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Controls whether the password field renders as text (visible) or password (masked)
+  const [showPassword, setShowPassword] = useState(false);
 
   const robotRef  = useRef<RobotStageHandle>(null);
   const titleRef  = useRef<HTMLDivElement>(null);
@@ -317,30 +319,78 @@ export default function LoginPage() {
               >
                 {tr.login.labelPassword}
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                minLength={6}
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                placeholder={tr.login.placeholderPassword}
-                style={{
-                  fontSize:     '16px',
-                  fontFamily:   'var(--font-sans)',
-                  height:       '44px',
-                  padding:      '0 14px',
-                  background:   'rgba(0,0,0,0.45)',
-                  border:       '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-sm)',
-                  color:        'var(--color-text-primary)',
-                  outline:      'none',
-                  transition:   'border-color 0.2s',
-                  width:        '100%',
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-focus)'; }}
-                onBlur={e  => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
-              />
+              {/*
+                Wrapper div with position:relative so the toggle button can be
+                absolutely positioned inside the right edge of the input field.
+              */}
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                  placeholder={tr.login.placeholderPassword}
+                  style={{
+                    fontSize:     '16px',
+                    fontFamily:   'var(--font-sans)',
+                    height:       '44px',
+                    padding:      '0 44px 0 14px', // extra right padding keeps text from sliding under the button
+                    background:   'rgba(0,0,0,0.45)',
+                    border:       '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    color:        'var(--color-text-primary)',
+                    outline:      'none',
+                    transition:   'border-color 0.2s',
+                    width:        '100%',
+                  }}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-focus)'; }}
+                  onBlur={e  => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                />
+                {/*
+                  Toggle button sits inside the input's right padding area.
+                  type="button" prevents it from submitting the form.
+                  aria-label switches between the two translated strings so
+                  screen readers announce the current action correctly.
+                */}
+                <button
+                  type="button"
+                  aria-label={showPassword ? tr.login.hidePassword : tr.login.showPassword}
+                  onClick={() => setShowPassword(v => !v)}
+                  style={{
+                    position:   'absolute',
+                    right:      '12px',
+                    top:        '50%',
+                    transform:  'translateY(-50%)',
+                    background: 'none',
+                    border:     'none',
+                    padding:    '4px',
+                    cursor:     'pointer',
+                    color:      'var(--color-text-muted)',
+                    display:    'flex',
+                    alignItems: 'center',
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-secondary)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; }}
+                >
+                  {showPassword ? (
+                    // Eye-off icon — password is currently visible, click to hide
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    // Eye icon — password is currently hidden, click to show
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Remember me — sign-in only */}
