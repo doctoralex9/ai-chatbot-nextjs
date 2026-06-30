@@ -39,6 +39,10 @@ long-term-plan.md
 # personal backup — not for template buyers
 /_betsense-backup/
 
+# internal project files — not for template buyers
+/CLAUDE.md
+/MASTER_UI_PROMPT.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*
