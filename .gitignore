@@ -62,3 +62,6 @@ next-env.d.ts
 # api keys (already covered by .env* above — explicit for clarity)
 .env.local
 .env.*.local
+
+#screenshots
+Gumroad-screenshots
