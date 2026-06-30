@@ -22,12 +22,22 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 long-term-plan.md
 
 # screenshots & playwright output
 /screenshots
 /.playwright-mcp
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# personal backup — not for template buyers
+/_betsense-backup/
 
 # debug
 npm-debug.log*
@@ -45,6 +55,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-#api keys and database credentials
+# api keys (already covered by .env* above — explicit for clarity)
 .env.local
 .env.*.local

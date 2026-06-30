@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(() =>
-    typeof window !== 'undefined' ? localStorage.getItem('rr-remember-me') !== 'false' : true
+    typeof window !== 'undefined' ? localStorage.getItem('app-remember-me') !== 'false' : true
   );
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -75,8 +75,8 @@ export default function LoginPage() {
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        localStorage.setItem('rr-remember-me', rememberMe ? 'true' : 'false');
-        sessionStorage.setItem('rr-tab-session', '1');
+        localStorage.setItem('app-remember-me', rememberMe ? 'true' : 'false');
+        sessionStorage.setItem('app-tab-session', '1');
         robotRef.current?.loginTurn();
         await new Promise(r => setTimeout(r, 700));
         router.push('/');

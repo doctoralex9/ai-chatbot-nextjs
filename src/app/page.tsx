@@ -67,14 +67,14 @@ export default function Chatbot() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/login'); return; }
 
-      const remembers  = localStorage.getItem('rr-remember-me');
-      const tabActive  = sessionStorage.getItem('rr-tab-session');
+      const remembers  = localStorage.getItem('app-remember-me');
+      const tabActive  = sessionStorage.getItem('app-tab-session');
       if (remembers === 'false' && !tabActive) {
         await supabase.auth.signOut();
         router.push('/login');
         return;
       }
-      sessionStorage.setItem('rr-tab-session', '1');
+      sessionStorage.setItem('app-tab-session', '1');
       setUserEmail(user.email ?? '');
 
       const usageRes = await fetch('/api/usage');
