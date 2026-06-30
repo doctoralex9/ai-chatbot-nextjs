@@ -48,21 +48,21 @@ const geistMono = Geist_Mono({
  */
 export const metadata: Metadata = {
   title: {
-    default: "BetSense — Betting Risk Analysis",
-    template: "%s | BetSense",
+    default: "AI Chatbot",
+    template: "%s | AI Chatbot",
   },
   description:
-    "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis — before you place a single stake.",
+    "An AI-powered chatbot built with Next.js, Vercel AI SDK, and Supabase.",
   keywords: [
     "AI chatbot",
-    "betting analysis",
-    "sports analytics",
-    "odds comparison",
-    "risk assessment",
+    "Next.js",
+    "Vercel AI SDK",
+    "Supabase",
+    "OpenAI",
   ],
-  authors: [{ name: "BetSense Team" }],
-  creator: "BetSense",
-  publisher: "BetSense",
+  authors: [{ name: "AI Chatbot" }],
+  creator: "AI Chatbot",
+  publisher: "AI Chatbot",
   robots: {
     index: true,
     follow: true,
@@ -78,16 +78,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://ai-chatbot-nextjs-navy.vercel.app/",
-    title: "BetSense — Betting Risk Analysis",
+    title: "AI Chatbot",
     description:
-      "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis.",
-    siteName: "BetSense",
+      "An AI-powered chatbot built with Next.js, Vercel AI SDK, and Supabase.",
+    siteName: "AI Chatbot",
   },
   twitter: {
     card: "summary_large_image",
-    title: "BetSense — Betting Risk Analysis",
+    title: "AI Chatbot",
     description:
-      "Your AI-powered betting risk radar. Assess bets, protect your bankroll, and get honest EV analysis.",
+      "An AI-powered chatbot built with Next.js, Vercel AI SDK, and Supabase.",
   },
 };
 

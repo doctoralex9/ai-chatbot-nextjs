@@ -228,7 +228,7 @@ export default function LoginPage() {
               letterSpacing: '-0.01em',
             }}
           >
-            BetSense
+            Chatbot   
           </h1>
         </div>
 

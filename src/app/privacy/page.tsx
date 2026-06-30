@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'How BetSense collects, uses, and protects your personal data.',
+  description: 'How AI Chatbot collects, uses, and protects your personal data.',
   robots: { index: true, follow: true },
 };
 
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
             marginBottom: '40px',
           }}
         >
-          ← Back to BetSense
+          ← Back to AI Chatbot
         </Link>
 
         {/* Header */}
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
 
         <Section title="1. Who we are">
           <p>
-            BetSense (&ldquo;we&rdquo;, &ldquo;us&rdquo;) is a betting risk analysis tool operated as an independent project.
+            AI Chatbot (&ldquo;we&rdquo;, &ldquo;us&rdquo;) is an AI-powered chatbot operated as an independent project.
             For any privacy-related enquiries please contact us at{' '}
             <a href="mailto:asyncdev2026@gmail.com" style={{ color: 'var(--color-text-primary)' }}>
               asyncdev2026@gmail.com
@@ -74,15 +74,15 @@ export default function PrivacyPage() {
           <ul>
             <li><strong>Account data:</strong> your email address, collected when you create an account via Supabase Auth.</li>
             <li><strong>Chat messages:</strong> the text prompts you send and the AI responses you receive are stored in our database so your conversation history is available between sessions.</li>
-            <li><strong>Uploaded images:</strong> screenshots or bet-slip images you attach to a message are uploaded to Supabase Storage and kept as part of your conversation history.</li>
-            <li><strong>Usage data:</strong> a counter of how many analyses you have performed in the current period, stored server-side.</li>
+            <li><strong>Uploaded images:</strong> images you attach to a message are uploaded to Supabase Storage and kept as part of your conversation history.</li>
+            <li><strong>Usage data:</strong> a counter of how many messages you have sent in the current period, stored server-side.</li>
             <li><strong>Analytics:</strong> anonymous page-view and navigation data collected by Vercel Analytics. No personal identifiers are stored; no cookies are set by this service.</li>
           </ul>
         </Section>
 
         <Section title="3. How we use your data">
           <ul>
-            <li>To provide the core service: your messages are sent to OpenAI&apos;s API to generate risk analysis responses.</li>
+            <li>To provide the core service: your messages are sent to OpenAI&apos;s API to generate AI responses.</li>
             <li>To persist your conversation history and let you continue previous sessions.</li>
             <li>To enforce usage limits and prevent abuse.</li>
             <li>To understand aggregate usage patterns and improve the product (via Vercel Analytics).</li>
@@ -150,14 +150,14 @@ export default function PrivacyPage() {
 
         <Section title="7. Cookies">
           <p>
-            BetSense uses a single session cookie (<code>rr-lang</code>) to remember your language preference. No advertising or tracking cookies are used.
+            AI Chatbot uses a single session cookie (<code>rr-lang</code>) to remember your language preference. No advertising or tracking cookies are used.
             Vercel Analytics uses a cookie-free, privacy-first approach and does not set any persistent cookies.
           </p>
         </Section>
 
         <Section title="8. Changes to this policy">
           <p>
-            We may update this policy occasionally. When we do, we will revise the &ldquo;Last updated&rdquo; date at the top of this page. Continued use of BetSense after changes are posted constitutes acceptance of the revised policy.
+            We may update this policy occasionally. When we do, we will revise the &ldquo;Last updated&rdquo; date at the top of this page. Continued use of AI Chatbot after changes are posted constitutes acceptance of the revised policy.
           </p>
         </Section>
 

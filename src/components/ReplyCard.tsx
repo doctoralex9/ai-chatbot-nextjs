@@ -63,7 +63,7 @@ export default function ReplyCard({ text, timestamp, isStreaming, isNew }: Reply
             color:         'var(--color-text-secondary)',
           }}
         >
-          BetSense
+          AI Chatbot
         </span>
       </div>
 
